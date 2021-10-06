@@ -1,0 +1,9 @@
+*.txt
+*.png
+model
+__pycache__/
+param
+result
+dataset
+model*
+pth
