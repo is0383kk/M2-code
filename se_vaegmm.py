@@ -63,7 +63,7 @@ gmm_mu1 = gmm_mu2 = None; gmm_var1 = gmm_var2 = None
 c_nd_A, label, loss_list = vae_module.train(
     iteration=0, # Current iteration
     gmm_mu=gmm_mu1, gmm_var=gmm_var1, # mu and var estimated by Multimodal-GMM
-    epoch=1, 
+    epoch=100, 
     train_loader=train_loader1, batch_size=args.batch_size, all_loader=all_loader1,
     model_dir=dir_name, agent="A"
 )
@@ -71,7 +71,7 @@ c_nd_A, label, loss_list = vae_module.train(
 c_nd_B, label, loss_list = vae_module.train(
     iteration=0, # Current iteration
     gmm_mu=gmm_mu2, gmm_var=gmm_var2, # mu and var estimated by Multimodal-GMM
-    epoch=1, 
+    epoch=100, 
     train_loader=train_loader2, batch_size=args.batch_size, all_loader=all_loader2,
     model_dir=dir_name, agent="B"
 )
@@ -85,7 +85,7 @@ D = train_size1
 dim = len(c_nd_A[0])
 print(f"Number of clusters: {K}"); print(f"Number of data: {len(c_nd_A)}"); print(f"Number of dimention: {len(c_nd_A[0])}")
 
-iteration = 10
+iteration = 100
 ARI_A = np.zeros((iteration)); ARI_B = np.zeros((iteration)); max_A_ARI = 0; max_B_ARI = 0
 concidence = np.zeros((iteration))
 accept_count_AtoB = np.zeros((iteration)); accept_count_BtoA = np.zeros((iteration)) # Number of acceptation
@@ -131,7 +131,7 @@ trace_nu_ik_A = [np.repeat(nu, K)]; trace_nu_ik_B = [np.repeat(nu, K)]
 print("M-H algorithm")
 for i in range(iteration):
     # Initializing z
-    print(f"-------------{i+1}試行目-------------")
+    if i == 0 or (i+1) % 25 == 0 or i == (iteration-1): print(f"-------------{i+1}試行目-------------")
     count_AtoB = 0
     count_BtoA = 0
     #########################################################################A->Bここから
@@ -179,7 +179,7 @@ for i in range(iteration):
         
         rand_u = np.random.rand() # 一様変数のサンプリング
         #print(f"rate={np.round(judge_r,3)}:c_liks1={np.round(cat_liks_A,3)}, c_liks2={np.round(cat_liks_B,3)}, u={np.round(rand_u,3)}") 
-        judge_r = min(1, judge_r) # 受容率
+        #judge_r = min(1, judge_r) # 受容率
         judge_r = -1 # 受容率
         #judge_r = 1000 # 受容率
         if judge_r >= rand_u: 
@@ -258,7 +258,7 @@ for i in range(iteration):
         judge_r = cat_liks_B / cat_liks_A # AとBのカテゴリ尤度から受容率の計算
 
         rand_u = np.random.rand() # 一様変数のサンプリング
-        judge_r = min(1, judge_r) # 受容率
+        #judge_r = min(1, judge_r) # 受容率
         judge_r = -1 # 受容率
         if judge_r >= rand_u: 
             # 受容

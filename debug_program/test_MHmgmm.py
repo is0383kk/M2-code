@@ -127,10 +127,11 @@ for i in range(iteration):
         ).copy() 
         tmp_eta_nB[k] += 0.5 * np.log(np.linalg.det(lambda_kdd_B[k]) + 1e-7)
         eta_dkB[:, k] = np.exp(tmp_eta_nB[k])
-
+    print(f"tmp_eta_nB:{np.round(tmp_eta_nB,3)}")
+    #print(f"eta_dkB:{np.round(eta_dkB,3)}")
     eta_dkA /= np.sum(eta_dkA, axis=1, keepdims=True) # Normalization
     eta_dkB /= np.sum(eta_dkB, axis=1, keepdims=True) # Normalization
-    
+    #print(f"eta_dkB:{np.round(eta_dkB,3)}")
     # 潜在変数をサンプル：式(4.93)
     for d in range(D):
         #print(f"-------------潜在変数割当て：D={d}-------------")
@@ -154,8 +155,8 @@ for i in range(iteration):
         rand_u = np.random.rand() # 一様変数のサンプリング
         #print(f"rate={np.round(judge_r,3)}:c_liks1={np.round(cat_liks_A,3)}, c_liks2={np.round(cat_liks_B,3)}, u={np.round(rand_u,3)}") 
         judge_r = min(1, judge_r) # 受容率
-        judge_r = -1 # 受容率
-        judge_r = 1000 # 受容率
+        #judge_r = -1 # 受容率
+        #judge_r = 1000 # 受容率
         if judge_r >= rand_u: 
             # 受容
             w_dk_B[d] = w_dk_A[d] # w_d = w_d^{Sp}
@@ -296,7 +297,7 @@ for i in range(iteration):
         #print(f"pred_a:{pred_label_A[d]}")
         #print(f"w_dk_A:{np.argmax(w_dk_B[d])}")
         if np.argmax(w_dk_A[d]) == np.argmax(w_dk_B[d]):
-            print(f"np.argmax(w_dk_A[d]):{np.argmax(w_dk_A[d])}")
+            #print(f"np.argmax(w_dk_A[d]):{np.argmax(w_dk_A[d])}")
             sum_same_w += 1
 
         for w in range(K):
