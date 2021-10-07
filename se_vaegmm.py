@@ -25,6 +25,7 @@ torch.manual_seed(args.seed)
 device = torch.device("cuda" if args.cuda else "cpu")
 
 # 各種保存用ディレクトリの作成
+print("---------------------ディレクトリの作成---------------------")
 file_name = "debug"; model_dir = "./model"; dir_name = "./model/"+file_name# debugフォルダに保存される
 graphA_dir = "./model/"+file_name+"/graphA"; graphB_dir = "./model/"+file_name+"/graphB" # 各種グラフの保存先
 pthA_dir = "./model/"+file_name+"/pthA"; pthB_dir = "./model/"+file_name+"/pthB"; npy_dir = "./model/"+file_name+"/npy"
@@ -39,6 +40,7 @@ if not os.path.exists(npy_dir):    os.mkdir(npy_dir)
 if not os.path.exists(reconA_dir):    os.mkdir(reconA_dir)
 if not os.path.exists(reconB_dir):    os.mkdir(reconB_dir)
 
+print("---------------------データセットの準備---------------------")
 # MNIST左右回転設定
 angle = 25 # 回転角度
 trans_ang1 = transforms.Compose([transforms.RandomRotation(degrees=(-angle,-angle)), transforms.ToTensor()]) # -angle度回転設定
@@ -47,18 +49,19 @@ trans_ang2 = transforms.Compose([transforms.RandomRotation(degrees=(angle,angle)
 trainval_dataset1 = datasets.MNIST('./../data', train=True, transform=trans_ang1, download=False) # Agent A用 MNIST
 trainval_dataset2 = datasets.MNIST('./../data', train=True, transform=trans_ang2, download=False) # Agent B用 MNIST
 n_samples = len(trainval_dataset1)
-train_size1 = int(n_samples * 0.15); train_size2 = int(n_samples * 0.15) # 9000枚
-print(f"Number of training datasets for Agent A :{train_size1}"); print(f"Number of training datasets for Agent B :{train_size2}")
-subset1_indices1 = list(range(0,train_size1)); subset2_indices1 = list(range(train_size1,n_samples)) 
-subset1_indices2 = list(range(0,train_size2)); subset2_indices2 = list(range(train_size2,n_samples)) 
+D = int(n_samples * 0.15) # データ総数
+print(f"Number of training datasets for Agent A :{D}"); print(f"Number of training datasets for Agent B :{D}")
+subset1_indices1 = list(range(0, D)); subset2_indices1 = list(range(D, n_samples)) 
+subset1_indices2 = list(range(0, D)); subset2_indices2 = list(range(D, n_samples)) 
 train_dataset1 = Subset(trainval_dataset1, subset1_indices1); val_dataset1 = Subset(trainval_dataset1, subset2_indices1)
 train_dataset2 = Subset(trainval_dataset2, subset1_indices1); val_dataset2 = Subset(trainval_dataset2, subset2_indices2)
 train_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=args.batch_size, shuffle=False) # train_loader for agent A
 train_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=args.batch_size, shuffle=False) # train_loader for agent B
-all_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=train_size1, shuffle=False) # データセット総数分のローダ
-all_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=train_size2, shuffle=False) # データセット総数分のローダ
+all_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=D, shuffle=False) # データセット総数分のローダ
+all_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=D, shuffle=False) # データセット総数分のローダ
 
 import vae_module
+print("---------------------VAEの学習開始---------------------")
 gmm_mu1 = gmm_mu2 = None; gmm_var1 = gmm_var2 = None
 c_nd_A, label, loss_list = vae_module.train(
     iteration=0, # Current iteration
@@ -75,23 +78,15 @@ c_nd_B, label, loss_list = vae_module.train(
     train_loader=train_loader2, batch_size=args.batch_size, all_loader=all_loader2,
     model_dir=dir_name, agent="B"
 )
-K = args.category
-#c_nd_A = np.loadtxt("./data1.txt") # Observation1(Corresponds to x_1 in the graphical model)
-#c_nd_B = np.loadtxt("./data2.txt") # Observation2(Corresponds to x_2 in the graphical model)
-#z_truth_n = np.loadtxt("./true_label.txt") # True label (True z_n)
-#D = len(c_nd_A)
-z_truth_n = label # True label (True z_n)
-D = train_size1
-dim = len(c_nd_A[0])
+K = args.category # サイン総数
+z_truth_n = label # 真のカテゴリ
+dim = len(c_nd_A[0]) # VAEの潜在変数の次元数（分散表現のカテゴリ変数の次元数）
 print(f"Number of clusters: {K}"); print(f"Number of data: {len(c_nd_A)}"); print(f"Number of dimention: {len(c_nd_A[0])}")
 
-iteration = 100
-ARI_A = np.zeros((iteration)); ARI_B = np.zeros((iteration)); max_A_ARI = 0; max_B_ARI = 0
-concidence = np.zeros((iteration))
-accept_count_AtoB = np.zeros((iteration)); accept_count_BtoA = np.zeros((iteration)) # Number of acceptation
+
 
 ############################## Initializing parameters ##############################
-print("Initializing parameters")
+print("---------------------MH_MGMMのパラメータ初期化---------------------")
 # Set hyperparameters
 beta = 1.0; m_d_A = np.repeat(0.0, dim); m_d_B = np.repeat(0.0, dim) # Hyperparameters for \mu^A, \mu^B
 w_dd_A = np.identity(dim) * 0.05; w_dd_B = np.identity(dim) * 0.05 # Hyperparameters for \Lambda^A, \Lambda^B
@@ -127,6 +122,11 @@ trace_m_ikd_A = [np.repeat(m_d_A.reshape((1, dim)), K, axis=0)]; trace_m_ikd_B =
 trace_w_ikdd_A = [np.repeat(w_dd_A.reshape((1, dim, dim)), K, axis=0)]; trace_w_ikdd_B = [np.repeat(w_dd_B.reshape((1, dim, dim)), K, axis=0)]
 trace_nu_ik_A = [np.repeat(nu, K)]; trace_nu_ik_B = [np.repeat(nu, K)]
 
+
+iteration = 100
+ARI_A = np.zeros((iteration)); ARI_B = np.zeros((iteration)); max_A_ARI = 0; max_B_ARI = 0
+concidence = np.zeros((iteration))
+accept_count_AtoB = np.zeros((iteration)); accept_count_BtoA = np.zeros((iteration)) # Number of acceptation
 ############################## M-H algorithm ##############################
 print("M-H algorithm")
 for i in range(iteration):

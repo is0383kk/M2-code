@@ -106,11 +106,9 @@ print("M-H algorithm")
 for i in range(iteration):
     # Initializing z
     print(f"-------------{i+1}試行目-------------")
-    count_AtoB = 0
-    count_BtoA = 0
+    count_AtoB = count_BtoA = 0
     #########################################################################A->Bここから
-    pred_label_A = []
-    pred_label_B = []
+    pred_label_A = []; pred_label_B = []
     # wのパラメータを計算
     tmp_eta_nA = np.zeros((K, D)); tmp_eta_nB = np.zeros((K, D))
     eta_dkA = np.zeros((D, K)); eta_dkB = np.zeros((D, K))
@@ -183,8 +181,7 @@ for i in range(iteration):
         ).flatten()
     #########################################################################A->Bここまで
     
-    mu_d_B = np.zeros((D,dim)) # GMMの平均パラメータ
-    var_d_B = np.zeros((D,dim)) # GMMのLambdaの対角成分（分散）
+    mu_d_B = np.zeros((D,dim)); var_d_B = np.zeros((D,dim))
     for d in range(D):
         pred_label_B.append(np.argmax(w_dk_B[d]))
         var_d_B[d] = np.diag(np.linalg.inv(lambda_kdd_B[pred_label_B[d]]))
@@ -193,8 +190,7 @@ for i in range(iteration):
 
     #########################################################################B->Aここから
     
-    pred_label_B = []
-    pred_label_A = []
+    pred_label_B = [];pred_label_A = []
     # wのパラメータを計算
     tmp_eta_nA = np.zeros((K, D)); tmp_eta_nB = np.zeros((K, D))
     eta_dkA = np.zeros((D, K)); eta_dkB = np.zeros((D, K))
