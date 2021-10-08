@@ -84,6 +84,9 @@ for it in range(mutual_iteration):
         train_loader=train_loader2, batch_size=args.batch_size, all_loader=all_loader2,
         model_dir=dir_name, agent="B"
     )
+    vae_module.plot_latent(iteration=it, all_loader=all_loader1, model_dir=dir_name, agent="A") # plot latent space of VAE on Agent A
+    vae_module.plot_latent(iteration=it, all_loader=all_loader2, model_dir=dir_name, agent="B") # plot latent space of VAE on Agent B
+
     K = args.category # サイン総数
     z_truth_n = label # 真のカテゴリ
     dim = len(c_nd_A[0]) # VAEの潜在変数の次元数（分散表現のカテゴリ変数の次元数）

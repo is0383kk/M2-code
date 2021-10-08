@@ -149,12 +149,6 @@ def plot_latent(iteration, all_loader, model_dir, agent): # VAEの潜在空間�
         data = data.to(device)
         recon_batch, mu, logvar, x_d = model(data)
         x_d = x_d.cpu()
-        #if classes is not None:
-        #    ari, result = calc_ari(classes, label.numpy())
-        #    print(f"ari:{round(ari,3)}")
-        #    ari = round(ari,3)
-        np.savetxt('./dataset/z_'+str(iteration)+'.txt', x_d.detach().numpy())
-        np.savetxt('./dataset/label.txt', label.detach().numpy())
         visualize_ls(iteration, x_d.detach().numpy(), label, model_dir,agent=agent)
         break
 
