@@ -13,9 +13,10 @@ import argparse
 from tool import visualize_gmm
 
 parser = argparse.ArgumentParser(description='Symbol emergence based on VAE+GMM Example')
-parser.add_argument('--batch-size', type=int, default=10, metavar='N', help='input batch size for training')
-parser.add_argument('--iteration', type=int, default=10, metavar='N', help='number of learning iteration')
-parser.add_argument('--category', type=int, default=10, metavar='N', help='number of category for GMM module')
+parser.add_argument('--batch-size', type=int, default=10, metavar='B', help='input batch size for training')
+parser.add_argument('--vae-iter', type=int, default=100, metavar='V', help='number of VAE iteration')
+parser.add_argument('--mh-iter', type=int, default=100, metavar='M', help='number of M-H mgmm iteration')
+parser.add_argument('--category', type=int, default=10, metavar='K', help='number of category for GMM module')
 #parser.add_argument('--iteration', type=int, default=100, metavar='N', help='number of iteration for MGMM_MH')
 parser.add_argument('--no-cuda', action='store_true', default=False, help='enables CUDA training')
 parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed')
@@ -48,7 +49,7 @@ trans_ang2 = transforms.Compose([transforms.RandomRotation(degrees=(angle,angle)
 trainval_dataset1 = datasets.MNIST('./../data', train=True, transform=trans_ang1, download=False) # Agent A用 MNIST
 trainval_dataset2 = datasets.MNIST('./../data', train=True, transform=trans_ang2, download=False) # Agent B用 MNIST
 n_samples = len(trainval_dataset1)
-D = int(n_samples * 0.15) # データ総数
+D = int(n_samples * (1/6)) # データ総数
 subset1_indices1 = list(range(0, D)); subset2_indices1 = list(range(D, n_samples)) 
 subset1_indices2 = list(range(0, D)); subset2_indices2 = list(range(D, n_samples)) 
 train_dataset1 = Subset(trainval_dataset1, subset1_indices1); val_dataset1 = Subset(trainval_dataset1, subset2_indices1)
@@ -57,7 +58,7 @@ train_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=args.batc
 train_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=args.batch_size, shuffle=False) # train_loader for agent B
 all_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=D, shuffle=False) # データセット総数分のローダ
 all_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=D, shuffle=False) # データセット総数分のローダ
-print(f"Number of training datasets for Agent A :{D}"); print(f"Number of training datasets for Agent B :{D}")
+print(f"D={D}, VAE_iter:{args.vae_iter}, MH_iter:{args.mh_iter}"); 
 
 import vae_module
 
@@ -66,7 +67,7 @@ gmm_mu1 = gmm_mu2 = None; gmm_var1 = gmm_var2 = None
 c_nd_A, label, loss_list = vae_module.train(
     iteration=0, # Current iteration
     gmm_mu=gmm_mu1, gmm_var=gmm_var1, # mu and var estimated by Multimodal-GMM
-    epoch=100, 
+    epoch=args.vae_iter, 
     train_loader=train_loader1, batch_size=args.batch_size, all_loader=all_loader1,
     model_dir=dir_name, agent="A"
 )
@@ -74,14 +75,13 @@ c_nd_A, label, loss_list = vae_module.train(
 c_nd_B, label, loss_list = vae_module.train(
     iteration=0, # Current iteration
     gmm_mu=gmm_mu2, gmm_var=gmm_var2, # mu and var estimated by Multimodal-GMM
-    epoch=100, 
+    epoch=args.vae_iter, 
     train_loader=train_loader2, batch_size=args.batch_size, all_loader=all_loader2,
     model_dir=dir_name, agent="B"
 )
 K = args.category # サイン総数
 z_truth_n = label # 真のカテゴリ
 dim = len(c_nd_A[0]) # VAEの潜在変数の次元数（分散表現のカテゴリ変数の次元数）
-print(f"Number of clusters: {K}"); print(f"Number of data: {len(c_nd_A)}"); print(f"Number of dimention: {len(c_nd_A[0])}")
 
 ############################## Initializing parameters ##############################
 # Set hyperparameters
@@ -94,12 +94,8 @@ mu_kd_A = np.empty((K, dim)); lambda_kdd_A = np.empty((K, dim, dim))
 mu_kd_B = np.empty((K, dim)); lambda_kdd_B = np.empty((K, dim, dim))
 for k in range(K):
     lambda_kdd_A[k] = wishart.rvs(df=nu, scale=w_dd_A, size=1); lambda_kdd_B[k] = wishart.rvs(df=nu, scale=w_dd_B, size=1)
-    mu_kd_A[k] = np.random.multivariate_normal(
-        mean=m_d_A, cov=np.linalg.inv(beta * lambda_kdd_A[k])
-    ).flatten()
-    mu_kd_B[k] = np.random.multivariate_normal(
-        mean=m_d_B, cov=np.linalg.inv(beta * lambda_kdd_B[k])
-    ).flatten()
+    mu_kd_A[k] = np.random.multivariate_normal(mean=m_d_A, cov=np.linalg.inv(beta * lambda_kdd_A[k])).flatten()
+    mu_kd_B[k] = np.random.multivariate_normal(mean=m_d_B, cov=np.linalg.inv(beta * lambda_kdd_B[k])).flatten()
 
 # Initializing unsampled \w
 w_dk_A = np.random.multinomial(1, [1/K]*K, size=D); w_dk_B = np.random.multinomial(1, [1/K]*K, size=D)
@@ -109,6 +105,9 @@ beta_hat_k_A = np.zeros(K) ;beta_hat_k_B = np.zeros(K)
 m_hat_kd_A = np.zeros((K, dim)); m_hat_kd_B = np.zeros((K, dim))
 w_hat_kdd_A = np.zeros((K, dim, dim)); w_hat_kdd_B = np.zeros((K, dim, dim))
 nu_hat_k_A = np.zeros(K); nu_hat_k_B = np.zeros(K)
+tmp_eta_nB = np.zeros((K, D)); eta_dkB = np.zeros((D, K))
+tmp_eta_nA = np.zeros((K, D)); eta_dkA = np.zeros((D, K))
+cat_liks_A = np.zeros(D); cat_liks_B = np.zeros(D)
 
 # Variables for storing the transition of each parameter
 trace_w_in_A = [np.repeat(np.nan, D)]; trace_w_in_B = [np.repeat(np.nan, D)]
@@ -119,67 +118,43 @@ trace_m_ikd_A = [np.repeat(m_d_A.reshape((1, dim)), K, axis=0)]; trace_m_ikd_B =
 trace_w_ikdd_A = [np.repeat(w_dd_A.reshape((1, dim, dim)), K, axis=0)]; trace_w_ikdd_B = [np.repeat(w_dd_B.reshape((1, dim, dim)), K, axis=0)]
 trace_nu_ik_A = [np.repeat(nu, K)]; trace_nu_ik_B = [np.repeat(nu, K)]
 
+# エージェントB：０イテレーション目のLi:Bのカテゴリ
+for k in range(K):
+    tmp_eta_nB[k] = np.diag(-0.5 * (c_nd_B - mu_kd_B[k]).dot(lambda_kdd_B[k]).dot((c_nd_B - mu_kd_B[k]).T)).copy() 
+    tmp_eta_nB[k] += 0.5 * np.log(np.linalg.det(lambda_kdd_B[k]) + 1e-7)
+    eta_dkB[:, k] = np.exp(tmp_eta_nB[k])
+eta_dkB /= np.sum(eta_dkB, axis=1, keepdims=True) # Normalization
+for d in range(D):
+    w_dk_B[d] = np.random.multinomial(n=1, pvals=eta_dkB[d], size=1).flatten() # w^Bのカテゴリ尤度計算用にサンプリング
+    cat_liks_B[d] = eta_dkB[d][np.argmax(w_dk_B[d])]
 
-iteration = 100 # M−H法のイテレーション数
+iteration = args.mh_iter # M−H法のイテレーション数
 ARI_A = np.zeros((iteration)); ARI_B = np.zeros((iteration)); max_A_ARI = 0; max_B_ARI = 0
 concidence = np.zeros((iteration))
 accept_count_AtoB = np.zeros((iteration)); accept_count_BtoA = np.zeros((iteration)) # イテレーション毎の受容回数
 ############################## M-H algorithm ##############################
-print("M-H algorithm")
+print(f"M-H algorithm Start: Epoch:{iteration}")
 for i in range(iteration):
-    # Initializing z
-    if i == 0 or (i+1) % 25 == 0 or i == (iteration-1): print(f"-------------{i+1}試行目-------------")
-    count_AtoB = 0; count_BtoA = 0
-    #########################################################################A->Bここから
-    pred_label_A = []; pred_label_B = []
-    # wのパラメータを計算
-    tmp_eta_nA = np.zeros((K, D)); tmp_eta_nB = np.zeros((K, D))
-    eta_dkA = np.zeros((D, K)); eta_dkB = np.zeros((D, K))
-    for k in range(K):
-        # エージェントA：更新後の\mu^A,\Lambda^Aからw^Aの事後分布のパラメータを計算
-        tmp_eta_nA[k] = np.diag(
-            -0.5 * (c_nd_A - mu_kd_A[k]).dot(lambda_kdd_A[k]).dot((c_nd_A - mu_kd_A[k]).T)
-        ).copy() 
+    count_AtoB = count_BtoA = 0 # 現在のイテレーションでの受容回数を保存する変数
+    """~~~~~~~~~~~~~~~~~~~~~~~~~~~~Sp:A->Li:Bここから~~~~~~~~~~~~~~~~~~~~~~~~~~~~"""
+    for k in range(K): # Sp:A：w^Aの事後分布のパラメータを計算
+        tmp_eta_nA[k] = np.diag(-0.5 * (c_nd_A - mu_kd_A[k]).dot(lambda_kdd_A[k]).dot((c_nd_A - mu_kd_A[k]).T)).copy() 
         tmp_eta_nA[k] += 0.5 * np.log(np.linalg.det(lambda_kdd_A[k]) + 1e-7)
         eta_dkA[:, k] = np.exp(tmp_eta_nA[k])
-        # エージェントB：１イテレーション前の\mu^B,\Lambda^Bからw^Bの事後分布のパラメータを計算
-        tmp_eta_nB[k] = np.diag(
-            -0.5 * (c_nd_B - mu_kd_B[k]).dot(lambda_kdd_B[k]).dot((c_nd_B - mu_kd_B[k]).T)
-        ).copy() 
-        tmp_eta_nB[k] += 0.5 * np.log(np.linalg.det(lambda_kdd_B[k]) + 1e-7)
-        eta_dkB[:, k] = np.exp(tmp_eta_nB[k])
+    eta_dkA /= np.sum(eta_dkA, axis=1, keepdims=True) # 正規化.w^Aのパラメータとなるディリクレ変数
 
-    eta_dkA /= np.sum(eta_dkA, axis=1, keepdims=True) # Normalization
-    eta_dkB /= np.sum(eta_dkB, axis=1, keepdims=True) # Normalization
-    
-    # 潜在変数をサンプル：式(4.93)
-    for d in range(D):
-        #print(f"-------------潜在変数割当て：D={d}-------------")
+    for d in range(D): # 潜在変数をサンプル：式(4.93)
         w_dk_A[d] = np.random.multinomial(n=1, pvals=eta_dkA[d], size=1).flatten() # w^Aのサンプリング
-        w_dk_B[d] = np.random.multinomial(n=1, pvals=eta_dkB[d], size=1).flatten() # w^Bのカテゴリ尤度計算用にサンプリング
-        pred_label_A.append(np.argmax(w_dk_A[d])) 
-
-        # 尤度比較
-        #cat_liks_A = tmp_eta_nA.T[d][np.where(w_dk_A[d]==1)]
-        #cat_liks_B = tmp_eta_nB.T[d][np.where(w_dk_B[d]==1)]
-        #judge_r = cat_liks_B / cat_liks_A # AとBのカテゴリ尤度から受容率の計算
         
-        # ディリクレ比較
-        cat_liks_A = eta_dkA[d][np.argmax(w_dk_A[d])]
-        cat_liks_B = eta_dkB[d][np.argmax(w_dk_B[d])]
-        judge_r = cat_liks_A / cat_liks_B # AとBのカテゴリ尤度から受容率の計算
-        
+        cat_liks_A[d] = eta_dkA[d][np.argmax(w_dk_A[d])]# ディリクレ変数
+        judge_r = cat_liks_A[d] / cat_liks_B[d] # AとBのカテゴリ尤度から受容率の計算
         rand_u = np.random.rand() # 一様変数のサンプリング
-        judge_r = min(1, judge_r) # 受容率
-        #judge_r = -1 # 受容率
-        #judge_r = 1000 # 受容率
-        if judge_r >= rand_u: 
-            # 受容
-            w_dk_B[d] = w_dk_A[d] # w_d = w_d^{Sp}
-            count_AtoB = count_AtoB + 1 # 受容した回数をカウント
+        #judge_r = min(1, judge_r) # 受容率
+        #judge_r = -1 # 全棄却
+        judge_r = 1000 # 全受容
+        if judge_r >= rand_u: w_dk_B[d] = w_dk_A[d]; count_AtoB = count_AtoB + 1 # 受容した回数をカウント
 
-    # 更新後のサインを用いてエージェントBの\mu, \lambdaの再サンプリング
-    # 観測モデルのパラメータをサンプル
+    # 更新後のw^Liを用いてエージェントBの\mu, \lambdaの再サンプリング
     for k in range(K):
         # muの事後分布のパラメータを計算
         beta_hat_k_B[k] = np.sum(w_dk_B[:, k]) + beta; m_hat_kd_B[k] = np.sum(w_dk_B[:, k] * c_nd_B.T, axis=1)
@@ -194,70 +169,35 @@ for i in range(iteration):
         # 更新後のパラメータからlambdaをサンプル
         lambda_kdd_B[k] = wishart.rvs(size=1, df=nu_hat_k_B[k], scale=w_hat_kdd_B[k])
         # 更新後のパラメータからmuをサンプル
-        mu_kd_B[k] = np.random.multivariate_normal(
-            mean=m_hat_kd_B[k], cov=np.linalg.inv(beta_hat_k_B[k] * lambda_kdd_B[k]), size=1
-        ).flatten()
-    #########################################################################A->Bここまで
-    
-    mu_d_B = np.zeros((D,dim)) # GMMの平均パラメータ
-    var_d_B = np.zeros((D,dim)) # GMMのLambdaの対角成分（分散）
+        mu_kd_B[k] = np.random.multivariate_normal(mean=m_hat_kd_B[k], cov=np.linalg.inv(beta_hat_k_B[k] * lambda_kdd_B[k]), size=1).flatten()
+
+    pred_label_B = []; mu_d_B = np.zeros((D,dim)); var_d_B = np.zeros((D,dim))
     for d in range(D):
-        pred_label_B.append(np.argmax(w_dk_B[d]))
+        pred_label_B.append(np.argmax(w_dk_B[d])) # 予測カテゴリ
         var_d_B[d] = np.diag(np.linalg.inv(lambda_kdd_B[pred_label_B[d]]))
         mu_d_B[d] = mu_d_B[pred_label_B[d]]
 
 
-    #########################################################################B->Aここから
-    pred_label_B = []
-    pred_label_A = []
-    # wのパラメータを計算
-    tmp_eta_nA = np.zeros((K, D)); tmp_eta_nB = np.zeros((K, D))
-    eta_dkA = np.zeros((D, K)); eta_dkB = np.zeros((D, K))
-    for k in range(K):
-        #print(f"-------------カテゴリ尤度計算：K={k}-------------")
-        # エージェントA：更新後の\mu,\Lambdaからw^Aの事後分布のパラメータを計算
-        tmp_eta_nB[k] = np.diag(
-            -0.5 * (c_nd_B - mu_kd_B[k]).dot(lambda_kdd_B[k]).dot((c_nd_B - mu_kd_B[k]).T)
-        ).copy() 
+    """~~~~~~~~~~~~~~~~~~~~~~~~~~~~Sp:B->Li:Aここから~~~~~~~~~~~~~~~~~~~~~~~~~~~~"""
+    for k in range(K): # Sp:A：w^Aの事後分布のパラメータを計算
+        tmp_eta_nB[k] = np.diag(-0.5 * (c_nd_B - mu_kd_B[k]).dot(lambda_kdd_B[k]).dot((c_nd_B - mu_kd_B[k]).T)).copy() 
         tmp_eta_nB[k] += 0.5 * np.log(np.linalg.det(lambda_kdd_B[k]) + 1e-7)
         eta_dkB[:, k] = np.exp(tmp_eta_nB[k])
-        # エージェントB：１イテレーション前の\mu,\Lambdaからw^Bの事後分布のパラメータを計算
-        tmp_eta_nA[k] = np.diag(
-            -0.5 * (c_nd_A - mu_kd_A[k]).dot(lambda_kdd_A[k]).dot((c_nd_A - mu_kd_A[k]).T)
-        ).copy() 
-        tmp_eta_nA[k] += 0.5 * np.log(np.linalg.det(lambda_kdd_A[k]) + 1e-7)
-        eta_dkA[:, k] = np.exp(tmp_eta_nA[k])
-
-    eta_dkB /= np.sum(eta_dkB, axis=1, keepdims=True) # 正規化. w^Aのパラメータとなるディリクレ変数
-    eta_dkA /= np.sum(eta_dkA, axis=1, keepdims=True) # 正規化. w^Bのパラメータとなるディリクレ変数
+    eta_dkB /= np.sum(eta_dkB, axis=1, keepdims=True) # 正規化. w^Bのパラメータとなるディリクレ変数
 
     # 潜在変数をサンプル：式(4.93)
     for d in range(D):
-        #print(f"-------------潜在変数割当て：D={d}-------------")
         w_dk_B[d] = np.random.multinomial(n=1, pvals=eta_dkB[d], size=1).flatten() # w^Bのサンプリング
-        w_dk_A[d] = np.random.multinomial(n=1, pvals=eta_dkA[d], size=1).flatten() # w^Aのカテゴリ尤度計算用にサンプリング
-        pred_label_B.append(np.argmax(w_dk_B[d]))
-        
-        # 尤度比較
-        #cat_liks_B = tmp_eta_nB.T[d][np.where(w_dk_B[d]==1)]
-        #cat_liks_A = tmp_eta_nA.T[d][np.where(w_dk_A[d]==1)]
-        #judge_r = cat_liks_A / cat_liks_B # AとBのカテゴリ尤度から受容率の計算
-        
-        # ディリクレ比較
-        cat_liks_B = eta_dkB[d][np.argmax(w_dk_B[d])]
-        cat_liks_A = eta_dkA[d][np.argmax(w_dk_A[d])]
-        judge_r = cat_liks_B / cat_liks_A # AとBのカテゴリ尤度から受容率の計算
 
+        cat_liks_B[d] = eta_dkB[d][np.argmax(w_dk_B[d])]
+        judge_r = cat_liks_B[d] / cat_liks_A[d] # AとBのカテゴリ尤度から受容率の計算
         rand_u = np.random.rand() # 一様変数のサンプリング
-        judge_r = min(1, judge_r) # 受容率
-        #judge_r = -1 # 受容率
-        if judge_r >= rand_u: 
-            # 受容
-            w_dk_A[d] = w_dk_B[d] # w_d = w_d^{Sp}
-            count_BtoA = count_BtoA + 1 # 受容した回数をカウント
-        
-    # 更新後のサインを用いてエージェントBの\mu, \lambdaの再サンプリング
-    # 観測モデルのパラメータをサンプル
+        #judge_r = min(1, judge_r) # 受容率
+        #judge_r = -1 # 全棄却用
+        judge_r = 1000 # 全受容用
+        if judge_r >= rand_u: w_dk_A[d] = w_dk_B[d]; count_BtoA = count_BtoA + 1 # 受容した回数をカウント
+
+    # 更新後のw^Liを用いてエージェントBの\mu, \lambdaの再サンプリング
     for k in range(K):
         # muの事後分布のパラメータを計算
         beta_hat_k_A[k] = np.sum(w_dk_A[:, k]) + beta; m_hat_kd_A[k] = np.sum(w_dk_A[:, k] * c_nd_A.T, axis=1)
@@ -272,18 +212,13 @@ for i in range(iteration):
         # 更新後のパラメータからlambdaをサンプル
         lambda_kdd_A[k] = wishart.rvs(size=1, df=nu_hat_k_A[k], scale=w_hat_kdd_A[k])
         # 更新後のパラメータからmuをサンプル
-        mu_kd_A[k] = np.random.multivariate_normal(
-            mean=m_hat_kd_A[k], cov=np.linalg.inv(beta_hat_k_A[k] * lambda_kdd_A[k]), size=1
-        ).flatten()
-    #########################################################################B->Aここまで
-    mu_d_A = np.zeros((D,dim)) # GMMの平均パラメータ
-    var_d_A = np.zeros((D,dim)) # GMMのLambdaの対角成分（分散）
+        mu_kd_A[k] = np.random.multivariate_normal(mean=m_hat_kd_A[k], cov=np.linalg.inv(beta_hat_k_A[k] * lambda_kdd_A[k]), size=1).flatten()
+    
+    pred_label_A = []; mu_d_A = np.zeros((D,dim)); var_d_A = np.zeros((D,dim))
     for d in range(D):
         pred_label_A.append(np.argmax(w_dk_A[d]))
         var_d_A[d] = np.diag(np.linalg.inv(lambda_kdd_A[pred_label_A[d]]))
         mu_d_A[d] = mu_d_A[pred_label_A[d]]
-    
-    
     ############################## 評価値計算 ##############################
     # cappa 係数の計算
     sum_same_w = 0.0
@@ -330,14 +265,14 @@ for i in range(iteration):
     np.save(npy_dir+'/muA_'+str(iteration)+'.npy', mu_kd_A); np.save(npy_dir+'/muB_'+str(iteration)+'.npy', mu_kd_B)
     np.save(npy_dir+'/lambdaA_'+str(iteration)+'.npy', lambda_kdd_A); np.save(npy_dir+'/lambdaB_'+str(iteration)+'.npy', lambda_kdd_B)
 
-
+print(f"max_A: {max(ARI_A)}, max_B: {max(ARI_B)}, max_c:{max(concidence)}")
 # 受容回数
 plt.figure()
 #plt.ylim(0,)
 plt.plot(range(0,iteration), accept_count_AtoB, marker="None", label="Accept_num:AtoB")
 plt.plot(range(0,iteration), accept_count_BtoA, marker="None", label="Accept_num:BtoA")
 plt.xlabel('iteration');plt.ylabel('Number of acceptation')
-plt.ylim(0,train_size1)
+plt.ylim(0,D)
 plt.legend()
 plt.savefig(dir_name+'/accept.png')
 #plt.show()
@@ -346,7 +281,7 @@ plt.close()
 # concidence
 plt.plot(range(0,iteration), concidence, marker="None")
 plt.xlabel('iteration'); plt.ylabel('Concidence')
-plt.ylim(0,)
+plt.ylim(0,1)
 plt.title('Cappa')
 plt.savefig(dir_name+"/conf.png")
 #plt.show()
@@ -356,7 +291,7 @@ plt.close()
 plt.plot(range(0,iteration), ARI_A, marker="None",label="ARI_A")
 plt.plot(range(0,iteration), ARI_B, marker="None",label="ARI_B")
 plt.xlabel('iteration'); plt.ylabel('ARI')
-plt.ylim(0,)
+plt.ylim(0,1)
 plt.legend()
 plt.title('ARI')
 plt.savefig(dir_name+"/ari.png")

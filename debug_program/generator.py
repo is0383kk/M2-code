@@ -9,43 +9,43 @@ pi_synthetic_k = np.array([0.25, 0.25, 0.25, 0.25]) # Mixing ratio for synthetic
 #(This value when the number of clusters is 3)
 # Specify mean parameter for generating synthetic data
 mu_synthetic_kd_1 = np.array( # This is observation1
-    [[0, 5.0], 
-     [-10.0, -10.0], 
-     [5.0, -20.0],
-     [-15.0, -30.0]]
+    [[0, 0.0], 
+     [12.0, 0.0], 
+     [0.0, 12.0],
+     [12.0, 12.0]]
 )
 mu_synthetic_kd_2 = np.array( # This is observation2
-    [[5.0, 0], 
-     [-10.0, -10.0], 
-     [-20.0, 5.0],
-     [-30.0, 20.0]]
+    [[0.0, 0], 
+     [12.0, 0.0], 
+     [0.0, 12.0],
+     [12.0, 12.0]]
 )
 # Specify covariance matrix parameters for generating synthetic data
 sigma2_synthetic_kdd_1 = np.array( # This is observation1
-    [[[25.0, 0], 
-    [0, 25.0]],
+    [[[5.0, 0], 
+    [0, 5.0]],
 
-     [[25.0, 0.0], 
-     [0.0, 25.0]],
+     [[5.0, 0.0], 
+     [0.0, 5.0]],
 
-     [[25.0, 0.0], 
-     [0.0, 25.0]],
+     [[5.0, 0.0], 
+     [0.0, 5.0]],
 
-     [[25.0, 0.0], 
-     [0.0, 25.0]]]
+     [[5.0, 0.0], 
+     [0.0, 5.0]]]
 )
 sigma2_synthetic_kdd_2 = np.array( # This is observation2
-    [[[25.0, 0], 
-    [0, 25.0]],
+    [[[5.0, 0], 
+    [0, 5.0]],
 
-     [[25.0, 0.0], 
-     [0.0, 25.0]],
+     [[5.0, 0.0], 
+     [0.0, 5.0]],
 
-     [[25.0, 0.0], 
-     [0.0, 25.0]],
+     [[5.0, 0.0], 
+     [0.0, 5.0]],
      
-     [[25.0, 0.0], 
-     [0.0, 25.0]]]
+     [[5.0, 0.0], 
+     [0.0, 5.0]]]
 )
 
 ############################## Make synthetic data ##############################

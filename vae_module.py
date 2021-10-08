@@ -75,7 +75,7 @@ class VAE(nn.Module):
 def train(iteration, gmm_mu, gmm_var, epoch, train_loader, batch_size, all_loader, model_dir, agent):
     prior_mean = torch.Tensor(len(train_loader), x_dim).float().fill_(0.0) # 最初のVAEの事前分布の\mu
     model = VAE().to(device)
-    print(f"VAE_Agent {agent} Training Start: Epoch:{epoch}")
+    print(f"VAE_Agent {agent} Training Start({iteration}): Epoch:{epoch}, Batch_size:{batch_size}")
     #loss_list = []
     #epoch_list = np.arange(epoch)
     #model.load_state_dict(torch.load(save_dir+"/vae.pth"))
