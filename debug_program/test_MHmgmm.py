@@ -48,7 +48,7 @@ D = len(c_nd_A)
 dim = len(c_nd_A[0])
 print(f"Number of clusters: {K}"); print(f"Number of data: {len(c_nd_A)}"); print(f"Number of dimention: {len(c_nd_A[0])}")
 
-iteration = 1
+iteration = 150
 ARI_A = np.zeros((iteration)); ARI_B = np.zeros((iteration)); max_A_ARI = 0; max_B_ARI = 0
 concidence = np.zeros((iteration))
 accept_count_AtoB = np.zeros((iteration)); accept_count_BtoA = np.zeros((iteration)) # Number of acceptation
@@ -110,8 +110,8 @@ for i in range(iteration):
     #########################################################################A->Bここから
     pred_label_A = []; pred_label_B = []
     # wのパラメータを計算
-    tmp_eta_nA = np.zeros((K, D)); tmp_eta_nB = np.zeros((K, D))
-    eta_dkA = np.zeros((D, K)); eta_dkB = np.zeros((D, K))
+    tmp_eta_nA = np.zeros((K, D)); eta_dkA = np.zeros((D, K))
+    tmp_eta_nB = np.zeros((K, D)); eta_dkB = np.zeros((D, K))
     for k in range(K):
         # エージェントA：更新後の\mu^A,\Lambda^Aからw^Aの事後分布のパラメータを計算
         tmp_eta_nA[k] = np.diag(
@@ -119,13 +119,15 @@ for i in range(iteration):
         ).copy() 
         tmp_eta_nA[k] += 0.5 * np.log(np.linalg.det(lambda_kdd_A[k]) + 1e-7)
         eta_dkA[:, k] = np.exp(tmp_eta_nA[k])
+        
         # エージェントB：１イテレーション前の\mu^B,\Lambda^Bからw^Bの事後分布のパラメータを計算
         tmp_eta_nB[k] = np.diag(
             -0.5 * (c_nd_B - mu_kd_B[k]).dot(lambda_kdd_B[k]).dot((c_nd_B - mu_kd_B[k]).T)
         ).copy() 
         tmp_eta_nB[k] += 0.5 * np.log(np.linalg.det(lambda_kdd_B[k]) + 1e-7)
         eta_dkB[:, k] = np.exp(tmp_eta_nB[k])
-    print(f"tmp_eta_nB:{np.round(tmp_eta_nB,3)}")
+        
+    #print(f"tmp_eta_nB:{np.round(tmp_eta_nB,3)}")
     #print(f"eta_dkB:{np.round(eta_dkB,3)}")
     eta_dkA /= np.sum(eta_dkA, axis=1, keepdims=True) # Normalization
     eta_dkB /= np.sum(eta_dkB, axis=1, keepdims=True) # Normalization
@@ -192,8 +194,8 @@ for i in range(iteration):
     
     pred_label_B = [];pred_label_A = []
     # wのパラメータを計算
-    tmp_eta_nA = np.zeros((K, D)); tmp_eta_nB = np.zeros((K, D))
-    eta_dkA = np.zeros((D, K)); eta_dkB = np.zeros((D, K))
+    tmp_eta_nA = np.zeros((K, D)); eta_dkA = np.zeros((D, K))
+    tmp_eta_nB = np.zeros((K, D)); eta_dkB = np.zeros((D, K))
     for k in range(K):
         #print(f"-------------カテゴリ尤度計算：K={k}-------------")
         # エージェントA：更新後の\mu,\Lambdaからw^Aの事後分布のパラメータを計算
@@ -202,13 +204,14 @@ for i in range(iteration):
         ).copy() 
         tmp_eta_nB[k] += 0.5 * np.log(np.linalg.det(lambda_kdd_B[k]) + 1e-7)
         eta_dkB[:, k] = np.exp(tmp_eta_nB[k])
+        
         # エージェントB：１イテレーション前の\mu,\Lambdaからw^Bの事後分布のパラメータを計算
         tmp_eta_nA[k] = np.diag(
             -0.5 * (c_nd_A - mu_kd_A[k]).dot(lambda_kdd_A[k]).dot((c_nd_A - mu_kd_A[k]).T)
         ).copy() 
         tmp_eta_nA[k] += 0.5 * np.log(np.linalg.det(lambda_kdd_A[k]) + 1e-7)
         eta_dkA[:, k] = np.exp(tmp_eta_nA[k])
-
+        
     eta_dkB /= np.sum(eta_dkB, axis=1, keepdims=True) # 正規化. w^Aのパラメータとなるディリクレ変数
     eta_dkA /= np.sum(eta_dkA, axis=1, keepdims=True) # 正規化. w^Bのパラメータとなるディリクレ変数
 
@@ -231,8 +234,8 @@ for i in range(iteration):
         
         rand_u = np.random.rand() # 一様変数のサンプリング
         judge_r = min(1, judge_r) # 受容率
-        judge_r = -1 # 受容率
-        judge_r = 1000 # 受容率
+        #judge_r = -1 # 受容率
+        #judge_r = 1000 # 受容率
         if judge_r >= rand_u: 
             # 受容
             w_dk_A[d] = w_dk_B[d] # w_d = w_d^{Sp}
@@ -310,7 +313,6 @@ for i in range(iteration):
     # Kappa係数の計算
     concidence[i] = np.round((a_observed - a_chance) / (1 - a_chance), 3)
 
-    #ARI[i] = np.round(calc_ari(pred_label_A,label)[0],4); print(f"ARI:{ARI[i]}")
     ARI_A[i] = np.round(calc_ari(pred_label_A, z_truth_n)[0],3); ARI_B[i] = np.round(calc_ari(pred_label_B, z_truth_n)[0],3)
     accept_count_AtoB[i] = count_AtoB; accept_count_BtoA[i] = count_BtoA
     

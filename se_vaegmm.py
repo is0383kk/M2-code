@@ -24,8 +24,7 @@ args.cuda = not args.no_cuda and torch.cuda.is_available()
 torch.manual_seed(args.seed)
 device = torch.device("cuda" if args.cuda else "cpu")
 
-# 各種保存用ディレクトリの作成
-print("---------------------ディレクトリの作成---------------------")
+############################## Making directory ##############################
 file_name = "debug"; model_dir = "./model"; dir_name = "./model/"+file_name# debugフォルダに保存される
 graphA_dir = "./model/"+file_name+"/graphA"; graphB_dir = "./model/"+file_name+"/graphB" # 各種グラフの保存先
 pthA_dir = "./model/"+file_name+"/pthA"; pthB_dir = "./model/"+file_name+"/pthB"; npy_dir = "./model/"+file_name+"/npy"
@@ -40,7 +39,7 @@ if not os.path.exists(npy_dir):    os.mkdir(npy_dir)
 if not os.path.exists(reconA_dir):    os.mkdir(reconA_dir)
 if not os.path.exists(reconB_dir):    os.mkdir(reconB_dir)
 
-print("---------------------データセットの準備---------------------")
+############################## Prepareing Dataset ##############################
 # MNIST左右回転設定
 angle = 25 # 回転角度
 trans_ang1 = transforms.Compose([transforms.RandomRotation(degrees=(-angle,-angle)), transforms.ToTensor()]) # -angle度回転設定
@@ -50,7 +49,6 @@ trainval_dataset1 = datasets.MNIST('./../data', train=True, transform=trans_ang1
 trainval_dataset2 = datasets.MNIST('./../data', train=True, transform=trans_ang2, download=False) # Agent B用 MNIST
 n_samples = len(trainval_dataset1)
 D = int(n_samples * 0.15) # データ総数
-print(f"Number of training datasets for Agent A :{D}"); print(f"Number of training datasets for Agent B :{D}")
 subset1_indices1 = list(range(0, D)); subset2_indices1 = list(range(D, n_samples)) 
 subset1_indices2 = list(range(0, D)); subset2_indices2 = list(range(D, n_samples)) 
 train_dataset1 = Subset(trainval_dataset1, subset1_indices1); val_dataset1 = Subset(trainval_dataset1, subset2_indices1)
@@ -59,9 +57,11 @@ train_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=args.batc
 train_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=args.batch_size, shuffle=False) # train_loader for agent B
 all_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=D, shuffle=False) # データセット総数分のローダ
 all_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=D, shuffle=False) # データセット総数分のローダ
+print(f"Number of training datasets for Agent A :{D}"); print(f"Number of training datasets for Agent B :{D}")
 
 import vae_module
-print("---------------------VAEの学習開始---------------------")
+
+############################## Training VAE ##############################
 gmm_mu1 = gmm_mu2 = None; gmm_var1 = gmm_var2 = None
 c_nd_A, label, loss_list = vae_module.train(
     iteration=0, # Current iteration
@@ -83,10 +83,7 @@ z_truth_n = label # 真のカテゴリ
 dim = len(c_nd_A[0]) # VAEの潜在変数の次元数（分散表現のカテゴリ変数の次元数）
 print(f"Number of clusters: {K}"); print(f"Number of data: {len(c_nd_A)}"); print(f"Number of dimention: {len(c_nd_A[0])}")
 
-
-
 ############################## Initializing parameters ##############################
-print("---------------------MH_MGMMのパラメータ初期化---------------------")
 # Set hyperparameters
 beta = 1.0; m_d_A = np.repeat(0.0, dim); m_d_B = np.repeat(0.0, dim) # Hyperparameters for \mu^A, \mu^B
 w_dd_A = np.identity(dim) * 0.05; w_dd_B = np.identity(dim) * 0.05 # Hyperparameters for \Lambda^A, \Lambda^B
@@ -123,20 +120,18 @@ trace_w_ikdd_A = [np.repeat(w_dd_A.reshape((1, dim, dim)), K, axis=0)]; trace_w_
 trace_nu_ik_A = [np.repeat(nu, K)]; trace_nu_ik_B = [np.repeat(nu, K)]
 
 
-iteration = 100
+iteration = 100 # M−H法のイテレーション数
 ARI_A = np.zeros((iteration)); ARI_B = np.zeros((iteration)); max_A_ARI = 0; max_B_ARI = 0
 concidence = np.zeros((iteration))
-accept_count_AtoB = np.zeros((iteration)); accept_count_BtoA = np.zeros((iteration)) # Number of acceptation
+accept_count_AtoB = np.zeros((iteration)); accept_count_BtoA = np.zeros((iteration)) # イテレーション毎の受容回数
 ############################## M-H algorithm ##############################
 print("M-H algorithm")
 for i in range(iteration):
     # Initializing z
     if i == 0 or (i+1) % 25 == 0 or i == (iteration-1): print(f"-------------{i+1}試行目-------------")
-    count_AtoB = 0
-    count_BtoA = 0
+    count_AtoB = 0; count_BtoA = 0
     #########################################################################A->Bここから
-    pred_label_A = []
-    pred_label_B = []
+    pred_label_A = []; pred_label_B = []
     # wのパラメータを計算
     tmp_eta_nA = np.zeros((K, D)); tmp_eta_nB = np.zeros((K, D))
     eta_dkA = np.zeros((D, K)); eta_dkB = np.zeros((D, K))
@@ -163,9 +158,6 @@ for i in range(iteration):
         w_dk_A[d] = np.random.multinomial(n=1, pvals=eta_dkA[d], size=1).flatten() # w^Aのサンプリング
         w_dk_B[d] = np.random.multinomial(n=1, pvals=eta_dkB[d], size=1).flatten() # w^Bのカテゴリ尤度計算用にサンプリング
         pred_label_A.append(np.argmax(w_dk_A[d])) 
-        #print(f"w_dk_A[d]:{w_dk_A[d]},インデックス:{np.argmax(w_dk_A[d])}")
-        #print(f"eta_dkA:{eta_dkA[d]},{eta_dkA[d][np.argmax(w_dk_A[d])]}")
-        #print(f"{eta_dkA[d][0]},{eta_dkA[d][1]},{eta_dkA[d][2]}")
 
         # 尤度比較
         #cat_liks_A = tmp_eta_nA.T[d][np.where(w_dk_A[d]==1)]
@@ -178,9 +170,8 @@ for i in range(iteration):
         judge_r = cat_liks_A / cat_liks_B # AとBのカテゴリ尤度から受容率の計算
         
         rand_u = np.random.rand() # 一様変数のサンプリング
-        #print(f"rate={np.round(judge_r,3)}:c_liks1={np.round(cat_liks_A,3)}, c_liks2={np.round(cat_liks_B,3)}, u={np.round(rand_u,3)}") 
-        #judge_r = min(1, judge_r) # 受容率
-        judge_r = -1 # 受容率
+        judge_r = min(1, judge_r) # 受容率
+        #judge_r = -1 # 受容率
         #judge_r = 1000 # 受容率
         if judge_r >= rand_u: 
             # 受容
@@ -258,8 +249,8 @@ for i in range(iteration):
         judge_r = cat_liks_B / cat_liks_A # AとBのカテゴリ尤度から受容率の計算
 
         rand_u = np.random.rand() # 一様変数のサンプリング
-        #judge_r = min(1, judge_r) # 受容率
-        judge_r = -1 # 受容率
+        judge_r = min(1, judge_r) # 受容率
+        #judge_r = -1 # 受容率
         if judge_r >= rand_u: 
             # 受容
             w_dk_A[d] = w_dk_B[d] # w_d = w_d^{Sp}
@@ -318,14 +309,14 @@ for i in range(iteration):
 
     # Kappa係数の計算
     concidence[i] = np.round((a_observed - a_chance) / (1 - a_chance), 3)
-
-    #ARI[i] = np.round(calc_ari(pred_label_A,label)[0],4); print(f"ARI:{ARI[i]}")
+    # ARIの計算
     ARI_A[i] = np.round(calc_ari(pred_label_A, z_truth_n)[0],3); ARI_B[i] = np.round(calc_ari(pred_label_B, z_truth_n)[0],3)
+    # 受容回数
     accept_count_AtoB[i] = count_AtoB; accept_count_BtoA[i] = count_BtoA
     
     if max_A_ARI <= ARI_A[i]: max_A_ARI = ARI_A[i]        
     if i == 0 or (i+1) % 25 == 0 or i == (iteration-1): print(f"====> Epoch: {i+1}, ARI_A: {ARI_A[i]}, ARI_B: {ARI_B[i]}, cappa:{concidence[i]}")
-    #print(f"Accept_count(A->B):{accept_count_AtoB}"); print(f"Accept_count(B->A):{accept_count_BtoA}")
+
 
     # 値を記録
     _, w_n_A = np.where(w_dk_A == 1); _, w_n_B = np.where(w_dk_B == 1)
