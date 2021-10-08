@@ -119,7 +119,7 @@ def train(iteration, gmm_mu, gmm_var, epoch, train_loader, batch_size, all_loade
     plt.close()
     
     np.save(model_dir+'/npy/loss'+agent+'_'+str(iteration)+'.npy', np.array(loss_list))
-    torch.save(model.state_dict(), model_dir+"/pth"+agent+"/vae_"+str(iteration)+".pth")
+    torch.save(model.state_dict(), model_dir+"/pth/vae"+agent+"_"+str(iteration)+".pth")
     
     x_d, label = send_all_z(iteration=iteration, all_loader=all_loader, model_dir=model_dir, agent=agent)
 
@@ -130,7 +130,7 @@ def train(iteration, gmm_mu, gmm_var, epoch, train_loader, batch_size, all_loade
 def decode(iteration, decode_k, sample_num, sample_d, manual, model_dir, agent):
     print(f"Reconstruct image on Agent: {agent}, category: {decode_k}")
     model = VAE().to(device)
-    model.load_state_dict(torch.load(str(model_dir)+"/pth"+agent+"/vae_"+str(iteration)+".pth")); model.eval()
+    model.load_state_dict(torch.load(str(model_dir)+"/pth/vae"+agent+"_"+str(iteration)+".pth")); model.eval()
     mu_gmm_kd, lambda_gmm_kdd, pi_gmm_k = get_param(iteration, model_dir=model_dir, agent=agent)
     sample_d = torch.from_numpy(sample_d.astype(np.float32)).clone()
     with torch.no_grad():
@@ -143,7 +143,7 @@ def decode(iteration, decode_k, sample_num, sample_d, manual, model_dir, agent):
 def plot_latent(iteration, all_loader, model_dir, agent): # VAEの潜在空間を可視化するメソッド
     print(f"Plot latent space on Agent: {agent}")
     model = VAE().to(device)
-    model.load_state_dict(torch.load(model_dir+"/pth"+agent+"/vae_"+str(iteration)+".pth"))
+    model.load_state_dict(torch.load(model_dir+"/pth/vae"+agent+"_"+str(iteration)+".pth"))
     model.eval()
     for batch_idx, (data, label) in enumerate(all_loader):
         data = data.to(device)
@@ -179,7 +179,7 @@ def test(epoch):
 
 def send_all_z(iteration, all_loader, model_dir, agent): # gmmにvaeの潜在空間を送るメソッド
     model = VAE().to(device)
-    model.load_state_dict(torch.load(model_dir+"/pth"+agent+"/vae_"+str(iteration)+".pth")); model.eval()
+    model.load_state_dict(torch.load(model_dir+"/pth/vae"+agent+"_"+str(iteration)+".pth")); model.eval()
     for batch_idx, (data, label) in enumerate(all_loader):
         data = data.to(device)
         recon_batch, mu, logvar, x_d = model(data)
