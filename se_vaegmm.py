@@ -17,13 +17,15 @@ parser.add_argument('--batch-size', type=int, default=10, metavar='B', help='inp
 parser.add_argument('--vae-iter', type=int, default=100, metavar='V', help='number of VAE iteration')
 parser.add_argument('--mh-iter', type=int, default=100, metavar='M', help='number of M-H mgmm iteration')
 parser.add_argument('--category', type=int, default=10, metavar='K', help='number of category for GMM module')
-#parser.add_argument('--iteration', type=int, default=100, metavar='N', help='number of iteration for MGMM_MH')
+parser.add_argument('--mode', type=int, default=-1, metavar='M', help='0:All reject, 1:ALL accept')
+parser.add_argument('--debug', type=bool, default=False, metavar='D', help='Debug mode')
 parser.add_argument('--no-cuda', action='store_true', default=False, help='enables CUDA training')
 parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed')
 args = parser.parse_args()
 args.cuda = not args.no_cuda and torch.cuda.is_available()
 torch.manual_seed(args.seed)
 device = torch.device("cuda" if args.cuda else "cpu")
+if args.debug is True: args.vae_iter=2; args.mh_iter=2
 
 ############################## Making directory ##############################
 file_name = "debug"; model_dir = "./model"; dir_name = "./model/"+file_name# debugフォルダに保存される
@@ -60,7 +62,7 @@ train_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=args.batc
 train_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=args.batch_size, shuffle=False) # train_loader for agent B
 all_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=D, shuffle=False) # データセット総数分のローダ
 all_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=D, shuffle=False) # データセット総数分のローダ
-print(f"D={D}, VAE_iter:{args.vae_iter}, MH_iter:{args.mh_iter}"); 
+print(f"D={D}, VAE_iter:{args.vae_iter}, MH_iter:{args.mh_iter}, MH_mode:{args.mode}"); 
 
 import vae_module
 
@@ -145,6 +147,7 @@ for it in range(mutual_iteration):
     ############################## M-H algorithm ##############################
     print(f"M-H algorithm Start({it}): Epoch:{iteration}")
     for i in range(iteration):
+        pred_label_B = []; pred_label_A = []
         count_AtoB = count_BtoA = 0 # 現在のイテレーションでの受容回数を保存する変数
         """~~~~~~~~~~~~~~~~~~~~~~~~~~~~Sp:A->Li:Bここから~~~~~~~~~~~~~~~~~~~~~~~~~~~~"""
         for k in range(K): # Sp:A：w^Aの事後分布のパラメータを計算
@@ -155,14 +158,16 @@ for it in range(mutual_iteration):
 
         for d in range(D): # 潜在変数をサンプル：式(4.93)
             w_dk_A[d] = np.random.multinomial(n=1, pvals=eta_dkA[d], size=1).flatten() # w^Aのサンプリング
-            
+
             cat_liks_A[d] = eta_dkA[d][np.argmax(w_dk_A[d])]# ディリクレ変数
             judge_r = cat_liks_A[d] / cat_liks_B[d] # AとBのカテゴリ尤度から受容率の計算
             rand_u = np.random.rand() # 一様変数のサンプリング
-            #judge_r = min(1, judge_r) # 受容率
-            #judge_r = -1 # 全棄却
-            judge_r = 1000 # 全受容
-            if judge_r >= rand_u: w_dk_B[d] = w_dk_A[d]; count_AtoB = count_AtoB + 1 # 受容した回数をカウント
+            
+            if args.mode == 0: judge_r = -1 # 全棄却
+            elif args.mode == 1: judge_r = 1000 # 全受容
+            else: judge_r = min(1, judge_r) # 受容率
+            
+            if judge_r >= rand_u: w_dk_B[d] = w_dk_A[d]; count_AtoB += 1 # 受容した回数をカウント
 
         # 更新後のw^Liを用いてエージェントBの\mu, \lambdaの再サンプリング
         for k in range(K):
@@ -181,11 +186,10 @@ for it in range(mutual_iteration):
             # 更新後のパラメータからmuをサンプル
             mu_kd_B[k] = np.random.multivariate_normal(mean=m_hat_kd_B[k], cov=np.linalg.inv(beta_hat_k_B[k] * lambda_kdd_B[k]), size=1).flatten()
 
-        pred_label_B = []
+        
         for d in range(D):
-            pred_label_B.append(np.argmax(w_dk_B[d])) # 予測カテゴリ
-            mu_d_B[d] = mu_d_B[pred_label_B[d]]
-            var_d_B[d] = np.diag(np.linalg.inv(lambda_kdd_B[pred_label_B[d]]))
+            mu_d_B[d] = mu_kd_B[np.argmax(w_dk_B[d])]
+            var_d_B[d] = np.diag(np.linalg.inv(lambda_kdd_B[np.argmax(w_dk_B[d])]))
 
 
         """~~~~~~~~~~~~~~~~~~~~~~~~~~~~Sp:B->Li:Aここから~~~~~~~~~~~~~~~~~~~~~~~~~~~~"""
@@ -202,10 +206,12 @@ for it in range(mutual_iteration):
             cat_liks_B[d] = eta_dkB[d][np.argmax(w_dk_B[d])]
             judge_r = cat_liks_B[d] / cat_liks_A[d] # AとBのカテゴリ尤度から受容率の計算
             rand_u = np.random.rand() # 一様変数のサンプリング
-            #judge_r = min(1, judge_r) # 受容率
-            #judge_r = -1 # 全棄却用
-            judge_r = 1000 # 全受容用
-            if judge_r >= rand_u: w_dk_A[d] = w_dk_B[d]; count_BtoA = count_BtoA + 1 # 受容した回数をカウント
+            if args.mode == 0: judge_r = -1 # 全棄却
+            elif args.mode == 1: judge_r = 1000 # 全受容
+            else: judge_r = min(1, judge_r) # 受容率
+            if judge_r >= rand_u: w_dk_A[d] = w_dk_B[d]; count_BtoA += 1 # 受容した回数をカウント
+            pred_label_A.append(np.argmax(w_dk_A[d]))
+            pred_label_B.append(np.argmax(w_dk_B[d]))
 
         # 更新後のw^Liを用いてエージェントBの\mu, \lambdaの再サンプリング
         for k in range(K):
@@ -224,11 +230,10 @@ for it in range(mutual_iteration):
             # 更新後のパラメータからmuをサンプル
             mu_kd_A[k] = np.random.multivariate_normal(mean=m_hat_kd_A[k], cov=np.linalg.inv(beta_hat_k_A[k] * lambda_kdd_A[k]), size=1).flatten()
         
-        pred_label_A = []
+        
         for d in range(D):
-            pred_label_A.append(np.argmax(w_dk_A[d]))
-            mu_d_A[d] = mu_d_A[pred_label_A[d]]
-            var_d_A[d] = np.diag(np.linalg.inv(lambda_kdd_A[pred_label_A[d]]))
+            mu_d_A[d] = mu_kd_A[np.argmax(w_dk_A[d])]
+            var_d_A[d] = np.diag(np.linalg.inv(lambda_kdd_A[np.argmax(w_dk_A[d])]))
 
         ############################## 評価値計算 ##############################
         # cappa 係数の計算
