@@ -160,8 +160,8 @@ for it in range(mutual_iteration):
             judge_r = cat_liks_A[d] / cat_liks_B[d] # AとBのカテゴリ尤度から受容率の計算
             rand_u = np.random.rand() # 一様変数のサンプリング
             #judge_r = min(1, judge_r) # 受容率
-            judge_r = -1 # 全棄却
-            #judge_r = 1000 # 全受容
+            #judge_r = -1 # 全棄却
+            judge_r = 1000 # 全受容
             if judge_r >= rand_u: w_dk_B[d] = w_dk_A[d]; count_AtoB = count_AtoB + 1 # 受容した回数をカウント
 
         # 更新後のw^Liを用いてエージェントBの\mu, \lambdaの再サンプリング
@@ -203,8 +203,8 @@ for it in range(mutual_iteration):
             judge_r = cat_liks_B[d] / cat_liks_A[d] # AとBのカテゴリ尤度から受容率の計算
             rand_u = np.random.rand() # 一様変数のサンプリング
             #judge_r = min(1, judge_r) # 受容率
-            judge_r = -1 # 全棄却用
-            #judge_r = 1000 # 全受容用
+            #judge_r = -1 # 全棄却用
+            judge_r = 1000 # 全受容用
             if judge_r >= rand_u: w_dk_A[d] = w_dk_B[d]; count_BtoA = count_BtoA + 1 # 受容した回数をカウント
 
         # 更新後のw^Liを用いてエージェントBの\mu, \lambdaの再サンプリング
