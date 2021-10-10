@@ -65,7 +65,8 @@ print(f"D={D}, VAE_iter:{args.vae_iter}, MH_iter:{args.mh_iter}");
 import vae_module
 
 mutual_iteration = 5
-mu_d_A = var_d_A = mu_d_B = var_d_B = np.zeros((D))
+mu_d_A = np.zeros((D)); var_d_A = np.zeros((D)) 
+mu_d_B = np.zeros((D)); var_d_B = np.zeros((D))
 for it in range(mutual_iteration):
     print(f"------------------Mutual learning session {it} begins------------------")
     ############################## Training VAE ##############################
@@ -84,8 +85,8 @@ for it in range(mutual_iteration):
         train_loader=train_loader2, batch_size=args.batch_size, all_loader=all_loader2,
         model_dir=dir_name, agent="B"
     )
-    vae_module.plot_latent(iteration=it, all_loader=all_loader1, model_dir=dir_name, agent="A") # plot latent space of VAE on Agent A
-    vae_module.plot_latent(iteration=it, all_loader=all_loader2, model_dir=dir_name, agent="B") # plot latent space of VAE on Agent B
+    #vae_module.plot_latent(iteration=it, all_loader=all_loader1, model_dir=dir_name, agent="A") # plot latent space of VAE on Agent A
+    #vae_module.plot_latent(iteration=it, all_loader=all_loader2, model_dir=dir_name, agent="B") # plot latent space of VAE on Agent B
 
     K = args.category # サイン総数
     z_truth_n = label # 真のカテゴリ
@@ -93,29 +94,32 @@ for it in range(mutual_iteration):
 
     ############################## Initializing parameters ##############################
     # Set hyperparameters
-    beta = 1.0; m_d_A = m_d_B = np.repeat(0.0, dim) # Hyperparameters for \mu^A, \mu^B
-    w_dd_A = w_dd_B = np.identity(dim) * 0.01 # Hyperparameters for \Lambda^A, \Lambda^B
+    beta = 1.0; m_d_A = np.repeat(0.0, dim); m_d_B = np.repeat(0.0, dim) # Hyperparameters for \mu^A, \mu^B
+    w_dd_A = np.identity(dim) * 0.01; w_dd_B = np.identity(dim) * 0.01 # Hyperparameters for \Lambda^A, \Lambda^B
     nu = dim
 
     # Initializing \mu, \Lambda
-    mu_kd_A = mu_kd_B = np.empty((K, dim)); lambda_kdd_A = lambda_kdd_B =np.empty((K, dim, dim))
+    mu_kd_A = np.empty((K, dim)); lambda_kdd_A = np.empty((K, dim, dim))
+    mu_kd_B = np.empty((K, dim)); lambda_kdd_B = np.empty((K, dim, dim))
     for k in range(K):
         lambda_kdd_A[k] = wishart.rvs(df=nu, scale=w_dd_A, size=1); lambda_kdd_B[k] = wishart.rvs(df=nu, scale=w_dd_B, size=1)
         mu_kd_A[k] = np.random.multivariate_normal(mean=m_d_A, cov=np.linalg.inv(beta * lambda_kdd_A[k])).flatten()
         mu_kd_B[k] = np.random.multivariate_normal(mean=m_d_B, cov=np.linalg.inv(beta * lambda_kdd_B[k])).flatten()
 
     # Initializing unsampled \w
-    w_dk_A = w_dk_B = np.random.multinomial(1, [1/K]*K, size=D)
+    w_dk_A = np.random.multinomial(1, [1/K]*K, size=D)
+    w_dk_B = np.random.multinomial(1, [1/K]*K, size=D)
 
     # Initializing learning parameters
-    beta_hat_k_A = beta_hat_k_B = np.zeros(K)
-    m_hat_kd_A = m_hat_kd_B = np.zeros((K, dim))
-    w_hat_kdd_A = w_hat_kdd_B = np.zeros((K, dim, dim))
-    nu_hat_k_A = nu_hat_k_B = np.zeros(K)
-    tmp_eta_nB = eta_dkB = tmp_eta_nA = eta_dkA = np.zeros((D, K))
-    cat_liks_A = cat_liks_B = np.zeros(D)
-    mu_d_A = var_d_A = mu_d_B = var_d_B = np.zeros((D, dim))
-
+    beta_hat_k_A = np.zeros(K) ;beta_hat_k_B = np.zeros(K)
+    m_hat_kd_A = np.zeros((K, dim)); m_hat_kd_B = np.zeros((K, dim))
+    w_hat_kdd_A = np.zeros((K, dim, dim)); w_hat_kdd_B = np.zeros((K, dim, dim))
+    nu_hat_k_A = np.zeros(K); nu_hat_k_B = np.zeros(K)
+    tmp_eta_nB = np.zeros((K, D)); eta_dkB = np.zeros((D, K))
+    tmp_eta_nA = np.zeros((K, D)); eta_dkA = np.zeros((D, K))
+    cat_liks_A = np.zeros(D); cat_liks_B = np.zeros(D)
+    mu_d_A = np.zeros((D,dim)); var_d_A = np.zeros((D,dim)) 
+    mu_d_B = np.zeros((D,dim)); var_d_B = np.zeros((D,dim))
     # Variables for storing the transition of each parameter
     #trace_w_in_A = [np.repeat(np.nan, D)]; trace_w_in_B = [np.repeat(np.nan, D)]
     #trace_mu_ikd_A = [mu_kd_A.copy()]; trace_mu_ikd_B = [mu_kd_B.copy()]
@@ -136,7 +140,8 @@ for it in range(mutual_iteration):
         cat_liks_B[d] = eta_dkB[d][np.argmax(w_dk_B[d])]
 
     iteration = args.mh_iter # M−H法のイテレーション数
-    ARI_A = ARI_B = concidence = accept_count_AtoB = accept_count_BtoA = np.zeros((iteration))
+    ARI_A = np.zeros((iteration)); ARI_B = np.zeros((iteration)); concidence = np.zeros((iteration))
+    accept_count_AtoB = np.zeros((iteration)); accept_count_BtoA = np.zeros((iteration)) # Number of acceptation
     ############################## M-H algorithm ##############################
     print(f"M-H algorithm Start({it}): Epoch:{iteration}")
     for i in range(iteration):
@@ -154,8 +159,8 @@ for it in range(mutual_iteration):
             cat_liks_A[d] = eta_dkA[d][np.argmax(w_dk_A[d])]# ディリクレ変数
             judge_r = cat_liks_A[d] / cat_liks_B[d] # AとBのカテゴリ尤度から受容率の計算
             rand_u = np.random.rand() # 一様変数のサンプリング
-            judge_r = min(1, judge_r) # 受容率
-            #judge_r = -1 # 全棄却
+            #judge_r = min(1, judge_r) # 受容率
+            judge_r = -1 # 全棄却
             #judge_r = 1000 # 全受容
             if judge_r >= rand_u: w_dk_B[d] = w_dk_A[d]; count_AtoB = count_AtoB + 1 # 受容した回数をカウント
 
@@ -197,8 +202,8 @@ for it in range(mutual_iteration):
             cat_liks_B[d] = eta_dkB[d][np.argmax(w_dk_B[d])]
             judge_r = cat_liks_B[d] / cat_liks_A[d] # AとBのカテゴリ尤度から受容率の計算
             rand_u = np.random.rand() # 一様変数のサンプリング
-            judge_r = min(1, judge_r) # 受容率
-            #judge_r = -1 # 全棄却用
+            #judge_r = min(1, judge_r) # 受容率
+            judge_r = -1 # 全棄却用
             #judge_r = 1000 # 全受容用
             if judge_r >= rand_u: w_dk_A[d] = w_dk_B[d]; count_BtoA = count_BtoA + 1 # 受容した回数をカウント
 

@@ -94,7 +94,7 @@ for d in range(D):
     w_dk_B[d] = np.random.multinomial(n=1, pvals=eta_dkB[d], size=1).flatten() # w^Bのカテゴリ尤度計算用にサンプリング
     cat_liks_B[d] = eta_dkB[d][np.argmax(w_dk_B[d])]
 
-iteration = 150
+iteration = 50
 ARI_A = np.zeros((iteration)); ARI_B = np.zeros((iteration)); 
 concidence = np.zeros((iteration))
 accept_count_AtoB = np.zeros((iteration)); accept_count_BtoA = np.zeros((iteration)) # Number of acceptation
