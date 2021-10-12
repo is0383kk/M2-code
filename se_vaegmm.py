@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from scipy.stats import wishart 
+from scipy.stats import wishart, multivariate_normal
 import matplotlib.pyplot as plt
 from tool import calc_ari
 from sklearn.metrics import cohen_kappa_score
@@ -109,8 +109,7 @@ for it in range(mutual_iteration):
         mu_kd_B[k] = np.random.multivariate_normal(mean=m_d_B, cov=np.linalg.inv(beta * lambda_kdd_B[k])).flatten()
 
     # Initializing unsampled \w
-    w_dk_A = np.random.multinomial(1, [1/K]*K, size=D)
-    w_dk_B = np.random.multinomial(1, [1/K]*K, size=D)
+    w_dk_A = np.random.multinomial(1, [1/K]*K, size=D); w_dk_B = np.random.multinomial(1, [1/K]*K, size=D)
 
     # Initializing learning parameters
     beta_hat_k_A = np.zeros(K) ;beta_hat_k_B = np.zeros(K)
@@ -119,7 +118,7 @@ for it in range(mutual_iteration):
     nu_hat_k_A = np.zeros(K); nu_hat_k_B = np.zeros(K)
     tmp_eta_nB = np.zeros((K, D)); eta_dkB = np.zeros((D, K))
     tmp_eta_nA = np.zeros((K, D)); eta_dkA = np.zeros((D, K))
-    cat_liks_A = np.zeros(D); cat_liks_B = np.zeros(D)
+    liks_A = np.zeros(D); cat_liks_B = np.zeros(D)
     mu_d_A = np.zeros((D,dim)); var_d_A = np.zeros((D,dim)) 
     mu_d_B = np.zeros((D,dim)); var_d_B = np.zeros((D,dim))
     # Variables for storing the transition of each parameter
@@ -147,108 +146,108 @@ for it in range(mutual_iteration):
     ############################## M-H algorithm ##############################
     print(f"M-H algorithm Start({it}): Epoch:{iteration}")
     for i in range(iteration):
-    pred_label_A = []; pred_label_B = []; 
-    count_AtoB = count_BtoA = 0 # 現在のイテレーションでの受容回数を保存する変数
-    """~~~~~~~~~~~~~~~~~~~~~~~~~~~~Sp:A->Li:Bここから~~~~~~~~~~~~~~~~~~~~~~~~~~~~"""
-    w_dk = np.zeros((D, K)); 
-    for k in range(K): # Sp:A：w^Aの事後分布のパラメータを計算
-        tmp_eta_nA[k] = np.diag(-0.5 * (c_nd_A - mu_kd_A[k]).dot(lambda_kdd_A[k]).dot((c_nd_A - mu_kd_A[k]).T)).copy() 
-        #print(f"tmp_eta_nA:{np.round(tmp_eta_nA[k],4)}")
-        tmp_eta_nA[k] += 0.5 * np.log(np.linalg.det(lambda_kdd_A[k]) + 1e-7)
-        eta_dkA[:, k] = np.exp(tmp_eta_nA[k])
-    eta_dkA /= np.sum(eta_dkA, axis=1, keepdims=True) # 正規化.w^Aのパラメータとなるディリクレ変数
+        pred_label_A = []; pred_label_B = []
+        count_AtoB = count_BtoA = 0 # 現在のイテレーションでの受容回数を保存する変数
+        """~~~~~~~~~~~~~~~~~~~~~~~~~~~~Sp:A->Li:Bここから~~~~~~~~~~~~~~~~~~~~~~~~~~~~"""
+        w_dk = np.zeros((D, K)); 
+        for k in range(K): # Sp:A：w^Aの事後分布のパラメータを計算
+            tmp_eta_nA[k] = np.diag(-0.5 * (c_nd_A - mu_kd_A[k]).dot(lambda_kdd_A[k]).dot((c_nd_A - mu_kd_A[k]).T)).copy() 
+            #print(f"tmp_eta_nA:{np.round(tmp_eta_nA[k],4)}")
+            tmp_eta_nA[k] += 0.5 * np.log(np.linalg.det(lambda_kdd_A[k]) + 1e-7)
+            eta_dkA[:, k] = np.exp(tmp_eta_nA[k])
+        eta_dkA /= np.sum(eta_dkA, axis=1, keepdims=True) # 正規化.w^Aのパラメータとなるディリクレ変数
 
-    for d in range(D): # 潜在変数をサンプル：式(4.93)
-        w_dk_A[d] = np.random.multinomial(n=1, pvals=eta_dkA[d], size=1).flatten() # w^Aのサンプリング
-        pred_label_A.append(np.argmax(w_dk_A[d]))
+        for d in range(D): # 潜在変数をサンプル：式(4.93)
+            w_dk_A[d] = np.random.multinomial(n=1, pvals=eta_dkA[d], size=1).flatten() # w^Aのサンプリング
+            pred_label_A.append(np.argmax(w_dk_A[d]))
 
-        cat_liks_A[d] = multivariate_normal.pdf(c_nd_A[d], 
-                        mean=mu_kd_A[np.argmax(w_dk_A[d])], 
-                        cov=np.linalg.inv(lambda_kdd_A[np.argmax(w_dk_A[d])]),
-                        )
-        cat_liks_B[d] = multivariate_normal.pdf(c_nd_B[d], 
-                        mean=mu_kd_B[np.argmax(w_dk_B[d])], 
-                        cov=np.linalg.inv(lambda_kdd_B[np.argmax(w_dk_B[d])]),
-                        )
-        judge_r = cat_liks_A[d] / cat_liks_B[d] # AとBのカテゴリ尤度から受容率の計算
-        rand_u = np.random.rand() # 一様変数のサンプリング
-        judge_r = min(1, judge_r) # 受容率
-        judge_r = -1 # 全棄却
-        #judge_r = 1000 # 全受容
-        if judge_r >= rand_u: w_dk[d] = w_dk_A[d]; count_AtoB = count_AtoB + 1 # 受容した回数をカウント
-        else: w_dk[d] = w_dk_B[d]
+            cat_liks_A[d] = multivariate_normal.pdf(c_nd_B[d], 
+                            mean=mu_kd_B[np.argmax(w_dk_A[d])], 
+                            cov=np.linalg.inv(lambda_kdd_B[np.argmax(w_dk_A[d])]),
+                            )
+            cat_liks_B[d] = multivariate_normal.pdf(c_nd_B[d], 
+                            mean=mu_kd_B[np.argmax(w_dk_B[d])], 
+                            cov=np.linalg.inv(lambda_kdd_B[np.argmax(w_dk_B[d])]),
+                            )
+            judge_r = cat_liks_A[d] / cat_liks_B[d] # AとBのカテゴリ尤度から受容率の計算
+            rand_u = np.random.rand() # 一様変数のサンプリング
+            judge_r = min(1, judge_r) # 受容率
+            #judge_r = -1 # 全棄却
+            #judge_r = 1000 # 全受容
+            if judge_r >= rand_u: w_dk[d] = w_dk_A[d]; count_AtoB = count_AtoB + 1 # 受容した回数をカウント
+            else: w_dk[d] = w_dk_B[d]
 
-    # 更新後のw^Liを用いてエージェントBの\mu, \lambdaの再サンプリング
-    for k in range(K):
-        # muの事後分布のパラメータを計算
-        beta_hat_k_B[k] = np.sum(w_dk[:, k]) + beta; m_hat_kd_B[k] = np.sum(w_dk[:, k] * c_nd_B.T, axis=1)
-        m_hat_kd_B[k] += beta * m_d_B; m_hat_kd_B[k] /= beta_hat_k_B[k]
-        # lambdaの事後分布のパラメータを計算
-        tmp_w_dd_B = np.dot((w_dk[:, k] * c_nd_B.T), c_nd_B)
-        tmp_w_dd_B += beta * np.dot(m_d_B.reshape(dim, 1), m_d_B.reshape(1, dim))
-        tmp_w_dd_B -= beta_hat_k_B[k] * np.dot(m_hat_kd_B[k].reshape(dim, 1), m_hat_kd_B[k].reshape(1, dim))
-        tmp_w_dd_B += np.linalg.inv(w_dd_B)
-        w_hat_kdd_B[k] = np.linalg.inv(tmp_w_dd_B)
-        nu_hat_k_B[k] = np.sum(w_dk[:, k]) + nu
-        # 更新後のパラメータからlambdaをサンプル
-        lambda_kdd_B[k] = wishart.rvs(size=1, df=nu_hat_k_B[k], scale=w_hat_kdd_B[k])
-        # 更新後のパラメータからmuをサンプル
-        mu_kd_B[k] = np.random.multivariate_normal(mean=m_hat_kd_B[k], cov=np.linalg.inv(beta_hat_k_B[k] * lambda_kdd_B[k]), size=1).flatten()
+        # 更新後のw^Liを用いてエージェントBの\mu, \lambdaの再サンプリング
+        for k in range(K):
+            # muの事後分布のパラメータを計算
+            beta_hat_k_B[k] = np.sum(w_dk[:, k]) + beta; m_hat_kd_B[k] = np.sum(w_dk[:, k] * c_nd_B.T, axis=1)
+            m_hat_kd_B[k] += beta * m_d_B; m_hat_kd_B[k] /= beta_hat_k_B[k]
+            # lambdaの事後分布のパラメータを計算
+            tmp_w_dd_B = np.dot((w_dk[:, k] * c_nd_B.T), c_nd_B)
+            tmp_w_dd_B += beta * np.dot(m_d_B.reshape(dim, 1), m_d_B.reshape(1, dim))
+            tmp_w_dd_B -= beta_hat_k_B[k] * np.dot(m_hat_kd_B[k].reshape(dim, 1), m_hat_kd_B[k].reshape(1, dim))
+            tmp_w_dd_B += np.linalg.inv(w_dd_B)
+            w_hat_kdd_B[k] = np.linalg.inv(tmp_w_dd_B)
+            nu_hat_k_B[k] = np.sum(w_dk[:, k]) + nu
+            # 更新後のパラメータからlambdaをサンプル
+            lambda_kdd_B[k] = wishart.rvs(size=1, df=nu_hat_k_B[k], scale=w_hat_kdd_B[k])
+            # 更新後のパラメータからmuをサンプル
+            mu_kd_B[k] = np.random.multivariate_normal(mean=m_hat_kd_B[k], cov=np.linalg.inv(beta_hat_k_B[k] * lambda_kdd_B[k]), size=1).flatten()
 
+            for d in range(D):
+                mu_d_B[d] = mu_kd_B[np.argmax(w_dk[d])]
+                var_d_B[d] = np.diag(np.linalg.inv(lambda_kdd_B[np.argmax(w_dk[d])]))
+
+        """~~~~~~~~~~~~~~~~~~~~~~~~~~~~Sp:B->Li:Aここから~~~~~~~~~~~~~~~~~~~~~~~~~~~~"""
+        w_dk = np.zeros((D, K)); 
+        for k in range(K): # Sp:A：w^Aの事後分布のパラメータを計算
+            tmp_eta_nB[k] = np.diag(-0.5 * (c_nd_B - mu_kd_B[k]).dot(lambda_kdd_B[k]).dot((c_nd_B - mu_kd_B[k]).T)).copy() 
+            tmp_eta_nB[k] += 0.5 * np.log(np.linalg.det(lambda_kdd_B[k]) + 1e-7)
+            eta_dkB[:, k] = np.exp(tmp_eta_nB[k])
+        eta_dkB /= np.sum(eta_dkB, axis=1, keepdims=True) # 正規化. w^Bのパラメータとなるディリクレ変数
+
+        # 潜在変数をサンプル：式(4.93)
         for d in range(D):
-            mu_d_B[d] = mu_kd_B[np.argmax(w_dk[d])]
-            var_d_B[d] = np.diag(np.linalg.inv(lambda_kdd_B[np.argmax(w_dk[d])]))
+            w_dk_B[d] = np.random.multinomial(n=1, pvals=eta_dkB[d], size=1).flatten() # w^Bのサンプリング
+            pred_label_B.append(np.argmax(w_dk_B[d])) # 予測カテゴリ
 
-    """~~~~~~~~~~~~~~~~~~~~~~~~~~~~Sp:B->Li:Aここから~~~~~~~~~~~~~~~~~~~~~~~~~~~~"""
-    w_dk = np.zeros((D, K)); 
-    for k in range(K): # Sp:A：w^Aの事後分布のパラメータを計算
-        tmp_eta_nB[k] = np.diag(-0.5 * (c_nd_B - mu_kd_B[k]).dot(lambda_kdd_B[k]).dot((c_nd_B - mu_kd_B[k]).T)).copy() 
-        tmp_eta_nB[k] += 0.5 * np.log(np.linalg.det(lambda_kdd_B[k]) + 1e-7)
-        eta_dkB[:, k] = np.exp(tmp_eta_nB[k])
-    eta_dkB /= np.sum(eta_dkB, axis=1, keepdims=True) # 正規化. w^Bのパラメータとなるディリクレ変数
+            cat_liks_B[d] = multivariate_normal.pdf(c_nd_A[d], 
+                            mean=mu_kd_A[np.argmax(w_dk_B[d])], 
+                            cov=np.linalg.inv(lambda_kdd_A[np.argmax(w_dk_B[d])]),
+                            )
+            cat_liks_A[d] = multivariate_normal.pdf(c_nd_A[d], 
+                    mean=mu_kd_A[np.argmax(w_dk_A[d])], 
+                    cov=np.linalg.inv(lambda_kdd_A[np.argmax(w_dk_A[d])]),
+                    )
 
-    # 潜在変数をサンプル：式(4.93)
-    for d in range(D):
-        w_dk_B[d] = np.random.multinomial(n=1, pvals=eta_dkB[d], size=1).flatten() # w^Bのサンプリング
-        pred_label_B.append(np.argmax(w_dk_B[d])) # 予測カテゴリ
+            judge_r = cat_liks_B[d] / cat_liks_A[d] # AとBのカテゴリ尤度から受容率の計算
+            rand_u = np.random.rand() # 一様変数のサンプリング
+            judge_r = min(1, judge_r) # 受容率
+            #judge_r = -1 # 全棄却用
+            #judge_r = 1000 # 全受容用
+            if judge_r >= rand_u: w_dk[d] = w_dk_B[d]; count_BtoA = count_BtoA + 1 # 受容した回数をカウント
+            else: w_dk[d] = w_dk_A[d]
 
-        cat_liks_B[d] = multivariate_normal.pdf(c_nd_B[d], 
-                        mean=mu_kd_B[np.argmax(w_dk_B[d])], 
-                        cov=np.linalg.inv(lambda_kdd_B[np.argmax(w_dk_B[d])]),
-                        )
-        cat_liks_A[d] = multivariate_normal.pdf(c_nd_A[d], 
-                mean=mu_kd_A[np.argmax(w_dk_A[d])], 
-                cov=np.linalg.inv(lambda_kdd_A[np.argmax(w_dk_A[d])]),
-                )
+        # 更新後のw^Liを用いてエージェントBの\mu, \lambdaの再サンプリング
+        for k in range(K):
+            # muの事後分布のパラメータを計算
+            beta_hat_k_A[k] = np.sum(w_dk[:, k]) + beta; m_hat_kd_A[k] = np.sum(w_dk[:, k] * c_nd_A.T, axis=1)
+            m_hat_kd_A[k] += beta * m_d_A; m_hat_kd_A[k] /= beta_hat_k_A[k]
+            # lambdaの事後分布のパラメータを計算
+            tmp_w_dd_A = np.dot((w_dk[:, k] * c_nd_A.T), c_nd_A)
+            tmp_w_dd_A += beta * np.dot(m_d_A.reshape(dim, 1), m_d_A.reshape(1, dim))
+            tmp_w_dd_A -= beta_hat_k_A[k] * np.dot(m_hat_kd_A[k].reshape(dim, 1), m_hat_kd_A[k].reshape(1, dim))
+            tmp_w_dd_A += np.linalg.inv(w_dd_A)
+            w_hat_kdd_A[k] = np.linalg.inv(tmp_w_dd_A)
+            nu_hat_k_A[k] = np.sum(w_dk[:, k]) + nu
+            # 更新後のパラメータからlambdaをサンプル
+            lambda_kdd_A[k] = wishart.rvs(size=1, df=nu_hat_k_A[k], scale=w_hat_kdd_A[k])
+            # 更新後のパラメータからmuをサンプル
+            mu_kd_A[k] = np.random.multivariate_normal(mean=m_hat_kd_A[k], cov=np.linalg.inv(beta_hat_k_A[k] * lambda_kdd_A[k]), size=1).flatten()
 
-        judge_r = cat_liks_B[d] / cat_liks_A[d] # AとBのカテゴリ尤度から受容率の計算
-        rand_u = np.random.rand() # 一様変数のサンプリング
-        judge_r = min(1, judge_r) # 受容率
-        judge_r = -1 # 全棄却用
-        #judge_r = 1000 # 全受容用
-        if judge_r >= rand_u: w_dk[d] = w_dk_B[d]; count_BtoA = count_BtoA + 1 # 受容した回数をカウント
-        else: w_dk[d] = w_dk_A[d]
-
-    # 更新後のw^Liを用いてエージェントBの\mu, \lambdaの再サンプリング
-    for k in range(K):
-        # muの事後分布のパラメータを計算
-        beta_hat_k_A[k] = np.sum(w_dk[:, k]) + beta; m_hat_kd_A[k] = np.sum(w_dk[:, k] * c_nd_A.T, axis=1)
-        m_hat_kd_A[k] += beta * m_d_A; m_hat_kd_A[k] /= beta_hat_k_A[k]
-        # lambdaの事後分布のパラメータを計算
-        tmp_w_dd_A = np.dot((w_dk[:, k] * c_nd_A.T), c_nd_A)
-        tmp_w_dd_A += beta * np.dot(m_d_A.reshape(dim, 1), m_d_A.reshape(1, dim))
-        tmp_w_dd_A -= beta_hat_k_A[k] * np.dot(m_hat_kd_A[k].reshape(dim, 1), m_hat_kd_A[k].reshape(1, dim))
-        tmp_w_dd_A += np.linalg.inv(w_dd_A)
-        w_hat_kdd_A[k] = np.linalg.inv(tmp_w_dd_A)
-        nu_hat_k_A[k] = np.sum(w_dk[:, k]) + nu
-        # 更新後のパラメータからlambdaをサンプル
-        lambda_kdd_A[k] = wishart.rvs(size=1, df=nu_hat_k_A[k], scale=w_hat_kdd_A[k])
-        # 更新後のパラメータからmuをサンプル
-        mu_kd_A[k] = np.random.multivariate_normal(mean=m_hat_kd_A[k], cov=np.linalg.inv(beta_hat_k_A[k] * lambda_kdd_A[k]), size=1).flatten()
-
-        for d in range(D):
-            mu_d_A[d] = mu_kd_A[np.argmax(w_dk[d])]
-            var_d_A[d] = np.diag(np.linalg.inv(lambda_kdd_A[np.argmax(w_dk[d])]))
+            for d in range(D):
+                mu_d_A[d] = mu_kd_A[np.argmax(w_dk[d])]
+                var_d_A[d] = np.diag(np.linalg.inv(lambda_kdd_A[np.argmax(w_dk[d])]))
 
         ############################## 評価値計算 ##############################
         # cappa 係数の計算

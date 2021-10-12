@@ -40,21 +40,6 @@ if not os.path.exists(npy_dir):    os.mkdir(npy_dir)
 if not os.path.exists(reconA_dir):    os.mkdir(reconA_dir)
 if not os.path.exists(reconB_dir):    os.mkdir(reconB_dir)
 
-#二次元正規分布の確率密度を返す関数
-def gaussian(x, mu, sigma):
-    #分散共分散行列の行列式
-    det = np.linalg.det(sigma)
-    print(det)
-    #分散共分散行列の逆行列
-    inv = np.linalg.inv(sigma)
-    n = x.ndim
-    print(inv)
-    a = (np.sqrt((2 * np.pi) ** n * det))
-    print("a",a)
-    print("b",np.exp(-np.diag((x - mu)@inv@(x - mu).T)/2.0))
-    return np.exp(-np.diag((x - mu)@inv@(x - mu).T)/2.0) / (np.sqrt((2 * np.pi) ** n * det))
-
-
 K = 4
 c_nd_A = np.loadtxt("./dataset/data1.txt");c_nd_B = np.loadtxt("./dataset/data2.txt");z_truth_n = np.loadtxt("./dataset/true_label.txt") 
 #c_nd_A = np.loadtxt("./samedata.txt") c_nd_B = np.loadtxt("./samedata.txt");z_truth_n = np.loadtxt("./samelabel.txt")
@@ -66,7 +51,7 @@ print(f"Number of clusters: {K}"); print(f"Number of data: {len(c_nd_A)}"); prin
 print("Initializing parameters")
 # Set hyperparameters
 beta = 1.0; m_d_A = np.repeat(0.0, dim); m_d_B = np.repeat(0.0, dim) # Hyperparameters for \mu^A, \mu^B
-w_dd_A = np.identity(dim) * 0.08; w_dd_B = np.identity(dim) * 0.08 # Hyperparameters for \Lambda^A, \Lambda^B
+w_dd_A = np.identity(dim) * 0.01; w_dd_B = np.identity(dim) * 0.01 # Hyperparameters for \Lambda^A, \Lambda^B
 nu = dim
 
 # Initializing \mu, \Lambda
@@ -122,7 +107,7 @@ for d in range(D):
     w_dk_B[d] = np.random.multinomial(n=1, pvals=eta_dkB[d], size=1).flatten() # w^Bのカテゴリ尤度計算用にサンプリング
     cat_liks_B[d] = eta_dkB[d][np.argmax(w_dk_B[d])]
 
-iteration = 50
+iteration = 100
 ARI_A = np.zeros((iteration)); ARI_B = np.zeros((iteration)); 
 concidence = np.zeros((iteration))
 accept_count_AtoB = np.zeros((iteration)); accept_count_BtoA = np.zeros((iteration)) # Number of acceptation
@@ -144,18 +129,20 @@ for i in range(iteration):
         w_dk_A[d] = np.random.multinomial(n=1, pvals=eta_dkA[d], size=1).flatten() # w^Aのサンプリング
         pred_label_A.append(np.argmax(w_dk_A[d]))
 
-        cat_liks_A[d] = multivariate_normal.pdf(c_nd_A[d], 
-                        mean=mu_kd_A[np.argmax(w_dk_A[d])], 
-                        cov=np.linalg.inv(lambda_kdd_A[np.argmax(w_dk_A[d])]),
+        cat_liks_A[d] = multivariate_normal.pdf(c_nd_B[d], 
+                        mean=mu_kd_B[np.argmax(w_dk_A[d])], 
+                        cov=np.linalg.inv(lambda_kdd_B[np.argmax(w_dk_A[d])]),
                         )
         cat_liks_B[d] = multivariate_normal.pdf(c_nd_B[d], 
                         mean=mu_kd_B[np.argmax(w_dk_B[d])], 
                         cov=np.linalg.inv(lambda_kdd_B[np.argmax(w_dk_B[d])]),
                         )
+        #print(f"cat_A:{cat_liks_A[d]}")
+        #print(f"cat_B:{cat_liks_B[d]}")
         judge_r = cat_liks_A[d] / cat_liks_B[d] # AとBのカテゴリ尤度から受容率の計算
         rand_u = np.random.rand() # 一様変数のサンプリング
         judge_r = min(1, judge_r) # 受容率
-        judge_r = -1 # 全棄却
+        #judge_r = -1 # 全棄却
         #judge_r = 1000 # 全受容
         if judge_r >= rand_u: w_dk[d] = w_dk_A[d]; count_AtoB = count_AtoB + 1 # 受容した回数をカウント
         else: w_dk[d] = w_dk_B[d]
@@ -194,9 +181,9 @@ for i in range(iteration):
         w_dk_B[d] = np.random.multinomial(n=1, pvals=eta_dkB[d], size=1).flatten() # w^Bのサンプリング
         pred_label_B.append(np.argmax(w_dk_B[d])) # 予測カテゴリ
 
-        cat_liks_B[d] = multivariate_normal.pdf(c_nd_B[d], 
-                        mean=mu_kd_B[np.argmax(w_dk_B[d])], 
-                        cov=np.linalg.inv(lambda_kdd_B[np.argmax(w_dk_B[d])]),
+        cat_liks_B[d] = multivariate_normal.pdf(c_nd_A[d], 
+                        mean=mu_kd_A[np.argmax(w_dk_B[d])], 
+                        cov=np.linalg.inv(lambda_kdd_A[np.argmax(w_dk_B[d])]),
                         )
         cat_liks_A[d] = multivariate_normal.pdf(c_nd_A[d], 
                 mean=mu_kd_A[np.argmax(w_dk_A[d])], 
@@ -206,7 +193,7 @@ for i in range(iteration):
         judge_r = cat_liks_B[d] / cat_liks_A[d] # AとBのカテゴリ尤度から受容率の計算
         rand_u = np.random.rand() # 一様変数のサンプリング
         judge_r = min(1, judge_r) # 受容率
-        judge_r = -1 # 全棄却用
+        #judge_r = -1 # 全棄却用
         #judge_r = 1000 # 全受容用
         if judge_r >= rand_u: w_dk[d] = w_dk_B[d]; count_BtoA = count_BtoA + 1 # 受容した回数をカウント
         else: w_dk[d] = w_dk_A[d]
