@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from scipy.stats import wishart 
+from scipy.stats import wishart, multivariate_normal
 import matplotlib.pyplot as plt
 from tool import calc_ari
 from sklearn.metrics import cohen_kappa_score
@@ -40,6 +40,20 @@ if not os.path.exists(npy_dir):    os.mkdir(npy_dir)
 if not os.path.exists(reconA_dir):    os.mkdir(reconA_dir)
 if not os.path.exists(reconB_dir):    os.mkdir(reconB_dir)
 
+#二次元正規分布の確率密度を返す関数
+def gaussian(x, mu, sigma):
+    #分散共分散行列の行列式
+    det = np.linalg.det(sigma)
+    print(det)
+    #分散共分散行列の逆行列
+    inv = np.linalg.inv(sigma)
+    n = x.ndim
+    print(inv)
+    a = (np.sqrt((2 * np.pi) ** n * det))
+    print("a",a)
+    print("b",np.exp(-np.diag((x - mu)@inv@(x - mu).T)/2.0))
+    return np.exp(-np.diag((x - mu)@inv@(x - mu).T)/2.0) / (np.sqrt((2 * np.pi) ** n * det))
+
 
 K = 4
 c_nd_A = np.loadtxt("./dataset/data1.txt");c_nd_B = np.loadtxt("./dataset/data2.txt");z_truth_n = np.loadtxt("./dataset/true_label.txt") 
@@ -65,6 +79,18 @@ for k in range(K):
 
 # Initializing unsampled \w
 w_dk_A = np.random.multinomial(1, [1/K]*K, size=D); w_dk_B = np.random.multinomial(1, [1/K]*K, size=D)
+
+print(f"w_dk_A:{w_dk_A[0]}")
+#print(f"mu_kd_A:{np.round(mu_kd_A[np.argmax(w_dk_A[0])],3)}")
+#print(f"mu_kd_A:{np.round(mu_kd_A,3)}")
+print(f"lambda_kdd_A:{np.linalg.inv(lambda_kdd_A)}")
+print(f"lambda_kdd_A:{np.linalg.inv(lambda_kdd_A[np.argmax(w_dk_A[0])])}")
+
+
+y1 = multivariate_normal.pdf(c_nd_A[0], mean=mu_kd_A[np.argmax(w_dk_A[0])], cov=np.linalg.inv(lambda_kdd_A[np.argmax(w_dk_A[0])]))
+y2 = multivariate_normal.pdf(c_nd_B[0], mean=mu_kd_B[np.argmax(w_dk_B[0])], cov=np.linalg.inv(lambda_kdd_B[np.argmax(w_dk_B[0])]))
+print("y1",np.round(y1,3))
+print("y2",np.round(y2,3))
 
 # 各種パラメータの初期化
 beta_hat_k_A = np.zeros(K) ;beta_hat_k_B = np.zeros(K)
@@ -108,6 +134,7 @@ for i in range(iteration):
     """~~~~~~~~~~~~~~~~~~~~~~~~~~~~Sp:A->Li:Bここから~~~~~~~~~~~~~~~~~~~~~~~~~~~~"""
     for k in range(K): # Sp:A：w^Aの事後分布のパラメータを計算
         tmp_eta_nA[k] = np.diag(-0.5 * (c_nd_A - mu_kd_A[k]).dot(lambda_kdd_A[k]).dot((c_nd_A - mu_kd_A[k]).T)).copy() 
+        #print(f"tmp_eta_nA:{np.round(tmp_eta_nA[k],4)}")
         tmp_eta_nA[k] += 0.5 * np.log(np.linalg.det(lambda_kdd_A[k]) + 1e-7)
         eta_dkA[:, k] = np.exp(tmp_eta_nA[k])
     eta_dkA /= np.sum(eta_dkA, axis=1, keepdims=True) # 正規化.w^Aのパラメータとなるディリクレ変数
@@ -115,7 +142,16 @@ for i in range(iteration):
     for d in range(D): # 潜在変数をサンプル：式(4.93)
         w_dk_A[d] = np.random.multinomial(n=1, pvals=eta_dkA[d], size=1).flatten() # w^Aのサンプリング
 
-        cat_liks_A[d] = eta_dkA[d][np.argmax(w_dk_A[d])]# ディリクレ変数
+        cat_liks_A[d] = multivariate_normal.pdf(c_nd_A[d], 
+                        mean=mu_kd_A[np.argmax(w_dk_A[d])], 
+                        cov=np.linalg.inv(lambda_kdd_A[np.argmax(w_dk_A[d])]),
+                        )
+        cat_liks_B[d] = multivariate_normal.pdf(c_nd_B[d], 
+                        mean=mu_kd_B[np.argmax(w_dk_B[d])], 
+                        cov=np.linalg.inv(lambda_kdd_B[np.argmax(w_dk_B[d])]),
+                        )
+
+        #cat_liks_A[d] = eta_dkA[d][np.argmax(w_dk_A[d])]# ディリクレ変数
         judge_r = cat_liks_A[d] / cat_liks_B[d] # AとBのカテゴリ尤度から受容率の計算
         rand_u = np.random.rand() # 一様変数のサンプリング
         judge_r = min(1, judge_r) # 受容率
@@ -153,7 +189,15 @@ for i in range(iteration):
     for d in range(D):
         w_dk_B[d] = np.random.multinomial(n=1, pvals=eta_dkB[d], size=1).flatten() # w^Bのサンプリング
 
-        cat_liks_B[d] = eta_dkB[d][np.argmax(w_dk_B[d])]
+        cat_liks_B[d] = multivariate_normal.pdf(c_nd_B[d], 
+                        mean=mu_kd_B[np.argmax(w_dk_B[d])], 
+                        cov=np.linalg.inv(lambda_kdd_B[np.argmax(w_dk_B[d])]),
+                        )
+        cat_liks_A[d] = multivariate_normal.pdf(c_nd_A[d], 
+                mean=mu_kd_A[np.argmax(w_dk_A[d])], 
+                cov=np.linalg.inv(lambda_kdd_A[np.argmax(w_dk_A[d])]),
+                )
+
         judge_r = cat_liks_B[d] / cat_liks_A[d] # AとBのカテゴリ尤度から受容率の計算
         rand_u = np.random.rand() # 一様変数のサンプリング
         judge_r = min(1, judge_r) # 受容率
@@ -180,7 +224,7 @@ for i in range(iteration):
         # 更新後のパラメータからmuをサンプル
         mu_kd_A[k] = np.random.multivariate_normal(mean=m_hat_kd_A[k], cov=np.linalg.inv(beta_hat_k_A[k] * lambda_kdd_A[k]), size=1).flatten()
 
-    print(f"mu_kd{mu_kd_A},{mu_kd_A[np.argmax(w_dk_A)]},w_dk{np.argmax(w_dk_A)}")
+    #print(f"mu_kd{mu_kd_A},{mu_kd_A[np.argmax(w_dk_A)]},w_dk{np.argmax(w_dk_A)}")
 
     ############################## 評価値計算 ##############################
     # cappa 係数の計算
@@ -242,6 +286,7 @@ plt.close()
 # concidence
 plt.plot(range(0,iteration), concidence, marker="None")
 plt.xlabel('iteration'); plt.ylabel('Concidence')
+plt.ylim(0,1)
 plt.title('Cappa')
 plt.savefig(dir_name+"/conf.png")
 #plt.show()
