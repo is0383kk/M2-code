@@ -88,7 +88,7 @@ def decode_from_mgmm(load_iteration, sigma, K, decode_k, sample_num, manual, dir
                           sample_d=sample_d, manual=manual, model_dir=dir_name, agent="B")
 
 def main():
-    load_iteration = 0
+    load_iteration = 4
     decode_from_mgmm(load_iteration=load_iteration, sigma=0, K=10, decode_k=None, sample_num=1, manual=True, dir_name=dir_name)
     decode_from_mgmm(load_iteration=load_iteration, sigma=0, K=10, decode_k=None, sample_num=8, manual=False, dir_name=dir_name)
 

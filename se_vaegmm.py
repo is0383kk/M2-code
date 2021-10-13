@@ -118,7 +118,7 @@ for it in range(mutual_iteration):
     nu_hat_k_A = np.zeros(K); nu_hat_k_B = np.zeros(K)
     tmp_eta_nB = np.zeros((K, D)); eta_dkB = np.zeros((D, K))
     tmp_eta_nA = np.zeros((K, D)); eta_dkA = np.zeros((D, K))
-    liks_A = np.zeros(D); cat_liks_B = np.zeros(D)
+    cat_liks_A = np.zeros(D); cat_liks_B = np.zeros(D)
     mu_d_A = np.zeros((D,dim)); var_d_A = np.zeros((D,dim)) 
     mu_d_B = np.zeros((D,dim)); var_d_B = np.zeros((D,dim))
     # Variables for storing the transition of each parameter
@@ -171,8 +171,8 @@ for it in range(mutual_iteration):
                             )
             judge_r = cat_liks_A[d] / cat_liks_B[d] # AとBのカテゴリ尤度から受容率の計算
             rand_u = np.random.rand() # 一様変数のサンプリング
-            judge_r = min(1, judge_r) # 受容率
-            #judge_r = -1 # 全棄却
+            #judge_r = min(1, judge_r) # 受容率
+            judge_r = -1 # 全棄却
             #judge_r = 1000 # 全受容
             if judge_r >= rand_u: w_dk[d] = w_dk_A[d]; count_AtoB = count_AtoB + 1 # 受容した回数をカウント
             else: w_dk[d] = w_dk_B[d]
@@ -222,8 +222,8 @@ for it in range(mutual_iteration):
 
             judge_r = cat_liks_B[d] / cat_liks_A[d] # AとBのカテゴリ尤度から受容率の計算
             rand_u = np.random.rand() # 一様変数のサンプリング
-            judge_r = min(1, judge_r) # 受容率
-            #judge_r = -1 # 全棄却用
+            #judge_r = min(1, judge_r) # 受容率
+            judge_r = -1 # 全棄却用
             #judge_r = 1000 # 全受容用
             if judge_r >= rand_u: w_dk[d] = w_dk_B[d]; count_BtoA = count_BtoA + 1 # 受容した回数をカウント
             else: w_dk[d] = w_dk_A[d]
@@ -279,7 +279,7 @@ for it in range(mutual_iteration):
         # 受容回数
         accept_count_AtoB[i] = count_AtoB; accept_count_BtoA[i] = count_BtoA
         
-        if i == 0 or (i+1) % 25 == 0 or i == (iteration-1): print(f"====> Epoch: {i+1}, ARI_A: {ARI_A[i]}, ARI_B: {ARI_B[i]}, cappa:{concidence[i]}")
+        if i == 0 or (i+1) % 10 == 0 or i == (iteration-1): print(f"====> Epoch: {i+1}, ARI_A: {ARI_A[i]}, ARI_B: {ARI_B[i]}, cappa:{concidence[i]}")
 
 
         # 値を記録
@@ -295,7 +295,7 @@ for it in range(mutual_iteration):
     np.save(npy_dir+'/muA_'+str(it)+'.npy', mu_kd_A); np.save(npy_dir+'/muB_'+str(it)+'.npy', mu_kd_B)
     np.save(npy_dir+'/lambdaA_'+str(it)+'.npy', lambda_kdd_A); np.save(npy_dir+'/lambdaB_'+str(it)+'.npy', lambda_kdd_B)    
     np.savetxt(log_dir+"/ariA"+str(it)+".txt", ARI_B, fmt ='%.3f'); np.savetxt(log_dir+"/ariB"+str(it)+".txt", ARI_B, fmt ='%.2f'); np.savetxt(log_dir+"/cappa"+str(it)+".txt", concidence, fmt ='%.2f')
-    print(f"相互学習{it}回目:max_A: {max(ARI_A)}, max_B: {max(ARI_B)}, max_c:{max(concidence)}")
+
     # 受容回数
     plt.figure()
     #plt.ylim(0,)
@@ -308,7 +308,9 @@ for it in range(mutual_iteration):
     #plt.show()
     plt.close()
 
+    
     # concidence
+    plt.figure()
     plt.plot(range(0,iteration), concidence, marker="None")
     plt.xlabel('iteration'); plt.ylabel('Concidence')
     plt.ylim(0,1)
@@ -318,6 +320,7 @@ for it in range(mutual_iteration):
     plt.close()
 
     # ARI
+    plt.figure()
     plt.plot(range(0,iteration), ARI_A, marker="None",label="ARI_A")
     plt.plot(range(0,iteration), ARI_B, marker="None",label="ARI_B")
     plt.xlabel('iteration'); plt.ylabel('ARI')
@@ -327,3 +330,4 @@ for it in range(mutual_iteration):
     plt.savefig(result_dir+"/ari"+str(it)+".png")
     #plt.show()
     plt.close()
+    print(f"Iteration:{it} Done:max_A: {max(ARI_A)}, max_B: {max(ARI_B)}, max_c:{max(concidence)}")
