@@ -157,7 +157,7 @@ z_nk = np.random.multinomial(n=1, pvals=pi, size=D)
 ###### ここまで事前分布のパラメータを設定 ######
 
 ###### ここからギブスサンプリング ######
-iteration = 150 # ギブスサンプリングの試行回数を指定
+iteration = 100 # ギブスサンプリングの試行回数を指定
 ARI = np.zeros((iteration)) # イテレーション毎のARIを格納する変数
 
 # ギブスサンプリング

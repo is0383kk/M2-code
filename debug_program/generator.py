@@ -3,54 +3,60 @@ from scipy.stats import multivariate_normal
 import matplotlib.pyplot as plt
 
 K = 4 # Number of clusters
-N = 250 # Number of data
+N = 400 # Number of data
 pi_synthetic_k = np.array([0.25, 0.25, 0.25, 0.25]) # Mixing ratio for synthetic data
 
-#(This value when the number of clusters is 3)
-# Specify mean parameter for generating synthetic data
+
 mu_synthetic_kd_1 = np.array( # This is observation1
     [[0, 0.0], 
-     [12.0, 0.0], 
-     [0.0, 12.0],
-     [12.0, 12.0]]
+     [10.0, 0.0], 
+     [0.0, 10.0],
+     [10.0, 10.0]]
 )
+sigma2_synthetic_kdd_1 = np.array( # This is observation1
+    [[[12.0, 0], 
+    [0, 12.0]],
+
+     [[12.0, 0.0], 
+     [0.0, 12.0]],
+
+     [[12.0, 0.0], 
+     [0.0, 12.0]],
+
+     [[12.0, 0.0], 
+     [0.0, 12.0]]]
+)
+
 mu_synthetic_kd_2 = np.array( # This is observation2
     [[0.0, 0], 
-     [12.0, 0.0], 
-     [0.0, 12.0],
-     [12.0, 12.0]]
+     [10.0, 0.0], 
+     [0.0, 10.0],
+     [10.0, 10.0]]
 )
-# Specify covariance matrix parameters for generating synthetic data
-sigma2_synthetic_kdd_1 = np.array( # This is observation1
-    [[[5.0, 0], 
-    [0, 5.0]],
 
-     [[5.0, 0.0], 
-     [0.0, 5.0]],
 
-     [[5.0, 0.0], 
-     [0.0, 5.0]],
-
-     [[5.0, 0.0], 
-     [0.0, 5.0]]]
-)
 sigma2_synthetic_kdd_2 = np.array( # This is observation2
-    [[[10.0, 0], 
-    [0, 10.0]],
+    [[[12.0, 0], 
+    [0, 12.0]],
 
-     [[10.0, 0.0], 
-     [0.0, 10.0]],
+     [[12.0, 0.0], 
+     [0.0, 12.0]],
 
-     [[10.0, 0.0], 
-     [0.0, 10.0]],
+     [[12.0, 0.0], 
+     [0.0, 12.0]],
      
-     [[5.0, 0.0], 
-     [0.0, 5.0]]]
+     [[12.0, 0.0], 
+     [0.0, 12.0]]]
 )
 
 ############################## Make synthetic data ##############################
-z_synthetic_nk = np.random.multinomial(n=1, pvals=pi_synthetic_k, size=N)
-_, z_synthetic_n = np.where(z_synthetic_nk == 1)
+label_0 = np.full(100, 0)
+label_1 = np.full(100, 1)
+label_2 = np.full(100, 2)
+label_3 = np.full(100, 3)
+z_synthetic_n = np.concatenate([label_0,label_1,label_2,label_3])
+#z_synthetic_nk = np.random.multinomial(n=1, pvals=pi_synthetic_k, size=N)
+#_, z_synthetic_n = np.where(z_synthetic_nk == 1)
 # x_nd_1 will be the observation1 of Multimodal-GMM
 x_nd_1 = np.array([
     np.random.multivariate_normal(

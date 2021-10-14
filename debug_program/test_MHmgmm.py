@@ -16,7 +16,7 @@ parser = argparse.ArgumentParser(description='Symbol emergence based on VAE+GMM 
 parser.add_argument('--batch-size', type=int, default=10, metavar='N', help='input batch size for training')
 parser.add_argument('--iteration', type=int, default=10, metavar='N', help='number of learning iteration')
 parser.add_argument('--category', type=int, default=10, metavar='N', help='number of category for GMM module')
-parser.add_argument('--rate', type=int, default=100, metavar='N', help='number of category for GMM module')
+parser.add_argument('--mode', type=int, default=-1, metavar='M', help='0:All reject, 1:ALL accept')
 #parser.add_argument('--iteration', type=int, default=100, metavar='N', help='number of iteration for MGMM_MH')
 parser.add_argument('--no-cuda', action='store_true', default=False, help='enables CUDA training')
 parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed')
@@ -41,7 +41,10 @@ if not os.path.exists(reconA_dir):    os.mkdir(reconA_dir)
 if not os.path.exists(reconB_dir):    os.mkdir(reconB_dir)
 
 K = 4
-c_nd_A = np.loadtxt("./dataset/data1.txt");c_nd_B = np.loadtxt("./dataset/data2.txt");z_truth_n = np.loadtxt("./dataset/true_label.txt") 
+#c_nd_A = np.loadtxt("./dataset/data1.txt");
+c_nd_A = np.loadtxt("./dataset/data.txt") 
+c_nd_B = np.loadtxt("./dataset/data2.txt");z_truth_n = np.loadtxt("./dataset/true_label.txt") 
+
 #c_nd_A = np.loadtxt("./samedata.txt") c_nd_B = np.loadtxt("./samedata.txt");z_truth_n = np.loadtxt("./samelabel.txt")
 D = len(c_nd_A)
 dim = len(c_nd_A[0])
@@ -65,17 +68,17 @@ for k in range(K):
 # Initializing unsampled \w
 w_dk_A = np.random.multinomial(1, [1/K]*K, size=D); w_dk_B = np.random.multinomial(1, [1/K]*K, size=D)
 
-print(f"w_dk_A:{w_dk_A.shape}")
+#print(f"w_dk_A:{w_dk_A.shape}")
 #print(f"mu_kd_A:{np.round(mu_kd_A[np.argmax(w_dk_A[0])],3)}")
 #print(f"mu_kd_A:{np.round(mu_kd_A,3)}")
-print(f"lambda_kdd_A:{np.linalg.inv(lambda_kdd_A)}")
-print(f"lambda_kdd_A:{np.linalg.inv(lambda_kdd_A[np.argmax(w_dk_A[0])])}")
+#print(f"lambda_kdd_A:{np.linalg.inv(lambda_kdd_A)}")
+#print(f"lambda_kdd_A:{np.linalg.inv(lambda_kdd_A[np.argmax(w_dk_A[0])])}")
 
 
-y1 = multivariate_normal.pdf(c_nd_A[0], mean=mu_kd_A[np.argmax(w_dk_A[0])], cov=np.linalg.inv(lambda_kdd_A[np.argmax(w_dk_A[0])]))
-y2 = multivariate_normal.pdf(c_nd_B[0], mean=mu_kd_B[np.argmax(w_dk_B[0])], cov=np.linalg.inv(lambda_kdd_B[np.argmax(w_dk_B[0])]))
-print("y1",np.round(y1,3))
-print("y2",np.round(y2,3))
+#y1 = multivariate_normal.pdf(c_nd_A[0], mean=mu_kd_A[np.argmax(w_dk_A[0])], cov=np.linalg.inv(lambda_kdd_A[np.argmax(w_dk_A[0])]))
+#y2 = multivariate_normal.pdf(c_nd_B[0], mean=mu_kd_B[np.argmax(w_dk_B[0])], cov=np.linalg.inv(lambda_kdd_B[np.argmax(w_dk_B[0])]))
+#print("y1",np.round(y1,3))
+#print("y2",np.round(y2,3))
 
 # 各種パラメータの初期化
 beta_hat_k_A = np.zeros(K) ;beta_hat_k_B = np.zeros(K)
@@ -115,7 +118,8 @@ accept_count_AtoB = np.zeros((iteration)); accept_count_BtoA = np.zeros((iterati
 print("M-H algorithm")
 for i in range(iteration):
     pred_label_A = []; pred_label_B = []; 
-    count_AtoB = count_BtoA = 0 # 現在のイテレーションでの受容回数を保存する変数
+    count_AtoB = 0
+    count_BtoA = 0 # 現在のイテレーションでの受容回数を保存する変数
     """~~~~~~~~~~~~~~~~~~~~~~~~~~~~Sp:A->Li:Bここから~~~~~~~~~~~~~~~~~~~~~~~~~~~~"""
     w_dk = np.zeros((D, K)); 
     for k in range(K): # Sp:A：w^Aの事後分布のパラメータを計算
@@ -129,23 +133,27 @@ for i in range(iteration):
         w_dk_A[d] = np.random.multinomial(n=1, pvals=eta_dkA[d], size=1).flatten() # w^Aのサンプリング
         pred_label_A.append(np.argmax(w_dk_A[d]))
 
-        cat_liks_A[d] = multivariate_normal.pdf(c_nd_B[d], 
-                        mean=mu_kd_B[np.argmax(w_dk_A[d])], 
-                        cov=np.linalg.inv(lambda_kdd_B[np.argmax(w_dk_A[d])]),
-                        )
-        cat_liks_B[d] = multivariate_normal.pdf(c_nd_B[d], 
-                        mean=mu_kd_B[np.argmax(w_dk_B[d])], 
-                        cov=np.linalg.inv(lambda_kdd_B[np.argmax(w_dk_B[d])]),
-                        )
-        #print(f"cat_A:{cat_liks_A[d]}")
-        #print(f"cat_B:{cat_liks_B[d]}")
-        judge_r = cat_liks_A[d] / cat_liks_B[d] # AとBのカテゴリ尤度から受容率の計算
+        if args.mode == 0:
+            judge_r = -1 # 全棄却用
+        elif args.mode == 1:
+            judge_r = 1000 # 全棄却用
+        else:
+            cat_liks_A[d] = multivariate_normal.pdf(c_nd_B[d], 
+                            mean=mu_kd_B[np.argmax(w_dk_A[d])], 
+                            cov=np.linalg.inv(lambda_kdd_B[np.argmax(w_dk_A[d])]),
+                            )
+            cat_liks_B[d] = multivariate_normal.pdf(c_nd_B[d], 
+                            mean=mu_kd_B[np.argmax(w_dk_B[d])], 
+                            cov=np.linalg.inv(lambda_kdd_B[np.argmax(w_dk_B[d])]),
+                            )
+            judge_r = cat_liks_A[d] / cat_liks_B[d] # AとBのカテゴリ尤度から受容率の計算
+            judge_r = min(1, judge_r) # 受容率
         rand_u = np.random.rand() # 一様変数のサンプリング
-        judge_r = min(1, judge_r) # 受容率
-        #judge_r = -1 # 全棄却
-        #judge_r = 1000 # 全受容
-        if judge_r >= rand_u: w_dk[d] = w_dk_A[d]; count_AtoB = count_AtoB + 1 # 受容した回数をカウント
-        else: w_dk[d] = w_dk_B[d]
+        if judge_r >= rand_u: 
+            w_dk[d] = w_dk_A[d]
+            count_AtoB = count_AtoB + 1 # 受容した回数をカウント
+        else: 
+            w_dk[d] = w_dk_B[d]
 
     # 更新後のw^Liを用いてエージェントBの\mu, \lambdaの再サンプリング
     for k in range(K):
@@ -181,22 +189,29 @@ for i in range(iteration):
         w_dk_B[d] = np.random.multinomial(n=1, pvals=eta_dkB[d], size=1).flatten() # w^Bのサンプリング
         pred_label_B.append(np.argmax(w_dk_B[d])) # 予測カテゴリ
 
-        cat_liks_B[d] = multivariate_normal.pdf(c_nd_A[d], 
-                        mean=mu_kd_A[np.argmax(w_dk_B[d])], 
-                        cov=np.linalg.inv(lambda_kdd_A[np.argmax(w_dk_B[d])]),
-                        )
-        cat_liks_A[d] = multivariate_normal.pdf(c_nd_A[d], 
-                mean=mu_kd_A[np.argmax(w_dk_A[d])], 
-                cov=np.linalg.inv(lambda_kdd_A[np.argmax(w_dk_A[d])]),
-                )
-
-        judge_r = cat_liks_B[d] / cat_liks_A[d] # AとBのカテゴリ尤度から受容率の計算
+        if args.mode == 0:
+            judge_r = -1 # 全棄却用
+        elif args.mode == 1:
+            judge_r = 1000 # 全棄却用
+        else:
+            cat_liks_B[d] = multivariate_normal.pdf(c_nd_A[d], 
+                            mean=mu_kd_A[np.argmax(w_dk_B[d])], 
+                            cov=np.linalg.inv(lambda_kdd_A[np.argmax(w_dk_B[d])]),
+                            )
+            cat_liks_A[d] = multivariate_normal.pdf(c_nd_A[d], 
+                    mean=mu_kd_A[np.argmax(w_dk_A[d])], 
+                    cov=np.linalg.inv(lambda_kdd_A[np.argmax(w_dk_A[d])]),
+                    )
+            judge_r = cat_liks_B[d] / cat_liks_A[d] # AとBのカテゴリ尤度から受容率の計算
+            judge_r = min(1, judge_r) # 受容率
         rand_u = np.random.rand() # 一様変数のサンプリング
-        judge_r = min(1, judge_r) # 受容率
-        #judge_r = -1 # 全棄却用
+        #print(f"a:{np.round(cat_liks_A[d],3)} b:{np.round(cat_liks_B[d],3)}, j:{np.round(judge_r,3)}, u:{np.round(rand_u,3)} {judge_r>rand_u}")
         #judge_r = 1000 # 全受容用
-        if judge_r >= rand_u: w_dk[d] = w_dk_B[d]; count_BtoA = count_BtoA + 1 # 受容した回数をカウント
-        else: w_dk[d] = w_dk_A[d]
+        if judge_r >= rand_u: 
+            w_dk[d] = w_dk_B[d]
+            count_BtoA = count_BtoA + 1 # 受容した回数をカウント
+        else: 
+            w_dk[d] = w_dk_A[d]
 
     # 更新後のw^Liを用いてエージェントBの\mu, \lambdaの再サンプリング
     for k in range(K):
@@ -293,5 +308,16 @@ plt.ylim(0,)
 plt.legend()
 plt.title('ARI')
 plt.savefig(dir_name+"/ari.png")
+#plt.show()
+plt.close()
+
+# ARI
+plt.plot(range(0,D), cat_liks_A, marker="None",label="cat_liks_A")
+plt.plot(range(0,D), cat_liks_B, marker="None",label="cat_liks_B")
+plt.xlabel('Data num'); plt.ylabel('liks')
+plt.ylim(0,)
+plt.legend()
+plt.title('liks')
+plt.savefig(dir_name+"/liks.png")
 #plt.show()
 plt.close()
