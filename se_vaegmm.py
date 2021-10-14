@@ -160,7 +160,8 @@ for it in range(mutual_iteration):
         for d in range(D): # 潜在変数をサンプル：式(4.93)
             w_dk_A[d] = np.random.multinomial(n=1, pvals=eta_dkA[d], size=1).flatten() # w^Aのサンプリング
             pred_label_A.append(np.argmax(w_dk_A[d]))
-
+            
+            """
             cat_liks_A[d] = multivariate_normal.pdf(c_nd_B[d], 
                             mean=mu_kd_B[np.argmax(w_dk_A[d])], 
                             cov=np.linalg.inv(lambda_kdd_B[np.argmax(w_dk_A[d])]),
@@ -170,10 +171,12 @@ for it in range(mutual_iteration):
                             cov=np.linalg.inv(lambda_kdd_B[np.argmax(w_dk_B[d])]),
                             )
             judge_r = cat_liks_A[d] / cat_liks_B[d] # AとBのカテゴリ尤度から受容率の計算
+            """
             rand_u = np.random.rand() # 一様変数のサンプリング
             #judge_r = min(1, judge_r) # 受容率
-            judge_r = -1 # 全棄却
-            #judge_r = 1000 # 全受容
+            #judge_r = -1 # 全棄却
+            
+            judge_r = 1000 # 全受容
             if judge_r >= rand_u: w_dk[d] = w_dk_A[d]; count_AtoB = count_AtoB + 1 # 受容した回数をカウント
             else: w_dk[d] = w_dk_B[d]
 
@@ -210,7 +213,7 @@ for it in range(mutual_iteration):
         for d in range(D):
             w_dk_B[d] = np.random.multinomial(n=1, pvals=eta_dkB[d], size=1).flatten() # w^Bのサンプリング
             pred_label_B.append(np.argmax(w_dk_B[d])) # 予測カテゴリ
-
+            """
             cat_liks_B[d] = multivariate_normal.pdf(c_nd_A[d], 
                             mean=mu_kd_A[np.argmax(w_dk_B[d])], 
                             cov=np.linalg.inv(lambda_kdd_A[np.argmax(w_dk_B[d])]),
@@ -221,10 +224,11 @@ for it in range(mutual_iteration):
                     )
 
             judge_r = cat_liks_B[d] / cat_liks_A[d] # AとBのカテゴリ尤度から受容率の計算
+            """
             rand_u = np.random.rand() # 一様変数のサンプリング
             #judge_r = min(1, judge_r) # 受容率
-            judge_r = -1 # 全棄却用
-            #judge_r = 1000 # 全受容用
+            #judge_r = -1 # 全棄却用
+            judge_r = 1000 # 全受容用
             if judge_r >= rand_u: w_dk[d] = w_dk_B[d]; count_BtoA = count_BtoA + 1 # 受容した回数をカウント
             else: w_dk[d] = w_dk_A[d]
 

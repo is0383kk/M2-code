@@ -27,7 +27,7 @@ device = torch.device("cuda" if args.cuda else "cpu")
 
 ############################## Making directory ##############################
 
-file_name = "debug"; model_dir = "./model"; dir_name = "./model/"+file_name# debugフォルダに保存される
+file_name = "ncom"; model_dir = "./model"; dir_name = "./model/"+file_name# debugフォルダに保存される
 graphA_dir = "./model/"+file_name+"/graphA"; graphB_dir = "./model/"+file_name+"/graphB" # 各種グラフの保存先
 pth_dir = "./model/"+file_name+"/pth";npy_dir = "./model/"+file_name+"/npy"
 reconA_dir = model_dir+"/"+file_name+"/reconA/graph_dist"; reconB_dir = model_dir+"/"+file_name+"/reconB/graph_dist"
