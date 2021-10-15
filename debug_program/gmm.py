@@ -2,7 +2,7 @@ import numpy as np
 from scipy.stats import multivariate_normal, wishart, dirichlet # 多次元ガウス分布, ウィシャート分布, ディリクレ分布
 import matplotlib.pyplot as plt
 from sklearn.metrics.cluster import adjusted_rand_score as ari
-from tool import calc_ari
+
 
 K = 4
 x_nd = np.loadtxt("./dataset/data2.txt")
@@ -106,7 +106,7 @@ for i in range(iteration):
     
     #ARI[i] = np.round(calc_ari(pred_label,z_truth_n)[0],3)
     #print(f"ARI:{ARI[i]}")
-    ARI[i] = np.round(ari(pred_label,z_truth_n),3)
+    ARI[i] = np.round(ari(z_truth_n,pred_label),3)
     print(f"ARI:{ARI[i]}")
 
 

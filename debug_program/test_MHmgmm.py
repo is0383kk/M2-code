@@ -2,13 +2,13 @@ import os
 import numpy as np
 from scipy.stats import wishart, multivariate_normal
 import matplotlib.pyplot as plt
-from tool import calc_ari
 from sklearn.metrics import cohen_kappa_score
 import torch
 from torchvision import datasets, transforms
 from torchvision.utils import save_image
 from torch.utils.data.dataset import Subset
 import argparse
+from sklearn.metrics.cluster import adjusted_rand_score as ari
 #from custom_data import CustomDataset
 from tool import visualize_gmm
 
@@ -41,8 +41,8 @@ if not os.path.exists(reconA_dir):    os.mkdir(reconA_dir)
 if not os.path.exists(reconB_dir):    os.mkdir(reconB_dir)
 
 K = 4
-#c_nd_A = np.loadtxt("./dataset/data1.txt");
-c_nd_A = np.loadtxt("./dataset/data.txt") 
+c_nd_A = np.loadtxt("./dataset/data1.txt");
+#c_nd_A = np.loadtxt("./dataset/data.txt") 
 c_nd_B = np.loadtxt("./dataset/data2.txt");z_truth_n = np.loadtxt("./dataset/true_label.txt") 
 
 #c_nd_A = np.loadtxt("./samedata.txt") c_nd_B = np.loadtxt("./samedata.txt");z_truth_n = np.loadtxt("./samelabel.txt")
@@ -54,7 +54,7 @@ print(f"Number of clusters: {K}"); print(f"Number of data: {len(c_nd_A)}"); prin
 print("Initializing parameters")
 # Set hyperparameters
 beta = 1.0; m_d_A = np.repeat(0.0, dim); m_d_B = np.repeat(0.0, dim) # Hyperparameters for \mu^A, \mu^B
-w_dd_A = np.identity(dim) * 0.01; w_dd_B = np.identity(dim) * 0.01 # Hyperparameters for \Lambda^A, \Lambda^B
+w_dd_A = np.identity(dim) * 0.02; w_dd_B = np.identity(dim) * 0.02 # Hyperparameters for \Lambda^A, \Lambda^B
 nu = dim
 
 # Initializing \mu, \Lambda
@@ -260,7 +260,7 @@ for i in range(iteration):
     # Kappa係数の計算
     concidence[i] = np.round((a_observed - a_chance) / (1 - a_chance), 3)
 
-    ARI_A[i] = np.round(calc_ari(pred_label_A, z_truth_n)[0],3); ARI_B[i] = np.round(calc_ari(pred_label_B, z_truth_n)[0],3)
+    ARI_A[i] = np.round(ari(z_truth_n,pred_label_A),3); ARI_B[i] = np.round(ari(z_truth_n,pred_label_B),3)
     accept_count_AtoB[i] = count_AtoB; accept_count_BtoA[i] = count_BtoA
      
     #if i == 0 or (i+1) % 50 == 0 or i == (iteration-1): 

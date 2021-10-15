@@ -1,13 +1,10 @@
-import os
-import torch
 import numpy as np
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
 from random import random
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 from sklearn.metrics.cluster import adjusted_rand_score as ARI
-from scipy.stats import multivariate_normal, wishart, dirichlet
+from scipy.stats import multivariate_normal
 
 
 

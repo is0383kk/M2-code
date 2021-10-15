@@ -2,7 +2,7 @@ import numpy as np
 from scipy.stats import multivariate_normal, wishart, dirichlet 
 import matplotlib.pyplot as plt
 from sklearn.metrics.cluster import adjusted_rand_score as ari
-from tool import calc_ari
+
 
 ###### ここから人工データ生成に関して ######
 
@@ -105,7 +105,7 @@ beta = 1.0
 m_d_1 = np.repeat(0.0, dim); m_d_2 = np.repeat(0.0, dim)
 
 # lambdaの事前分布のパラメータを指定
-w_dd_1 = np.identity(dim) * 0.08; w_dd_2 = np.identity(dim) * 0.08 
+w_dd_1 = np.identity(dim) * 0.02; w_dd_2 = np.identity(dim) * 0.02 
 nu = dim
 
 #\mu, \lambdaの初期値を決定
@@ -223,8 +223,7 @@ for i in range(iteration):
     # piをサンプル：式(4.44)
     #pi_k = dirichlet.rvs(size=1, alpha=alpha_hat_k).flatten()
     
-    #ARI[i] = np.round(ari(z_truth_n,z_pred_n),3)
-    ARI[i] = np.round(calc_ari(z_pred_n, z_truth_n)[0],3)
+    ARI[i] = np.round(ari(z_truth_n,z_pred_n),3)
     print(f"ARI:{ARI[i]}")
 
     # 値を記録
