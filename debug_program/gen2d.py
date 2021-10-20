@@ -2,23 +2,19 @@ import numpy as np
 from scipy.stats import multivariate_normal
 import matplotlib.pyplot as plt
 
-K = 4 # Number of clusters
-N = 400 # Number of data
-pi_synthetic_k = np.array([0.25, 0.25, 0.25, 0.25]) # Mixing ratio for synthetic data
+K = 3 # Number of clusters
+N = 300 # Number of data
+pi_synthetic_k = np.array([0.25, 0.25, 0.25]) # Mixing ratio for synthetic data
 
 
 mu_synthetic_kd_1 = np.array( # This is observation1
-    [[0, 0.0], 
-     [10.0, 0.0], 
-     [0.0, 10.0],
-     [10.0, 10.0]]
+    [[0.0, 0.0], 
+     [13.0, 13.0], 
+     [-10.0, 20.0]]
 )
 sigma2_synthetic_kdd_1 = np.array( # This is observation1
-    [[[10.0, 0], 
-    [0, 10.0]],
-
-     [[10.0, 0.0], 
-     [0.0, 10.0]],
+    [[[10.0, 0.0], 
+    [0.0, 10.0]],
 
      [[10.0, 0.0], 
      [0.0, 10.0]],
@@ -26,25 +22,18 @@ sigma2_synthetic_kdd_1 = np.array( # This is observation1
      [[10.0, 0.0], 
      [0.0, 10.0]]]
 )
-
-mu_synthetic_kd_2 = np.array( # This is observation2
-    [[0.0, 0], 
-     [10.0, 0.0], 
-     [0.0, 10.0],
-     [10.0, 10.0]]
+mu_synthetic_kd_2 = np.array( # This is observation1
+    [[0, 0.0], 
+     [15.0, 0.0], 
+     [0.0, 15.0]]
 )
-
-
-sigma2_synthetic_kdd_2 = np.array( # This is observation2
-    [[[10.0, 0], 
-    [0, 10.0]],
+sigma2_synthetic_kdd_2 = np.array( # This is observation1
+    [[[10.0, 0.0], 
+    [0.0, 10.0]],
 
      [[10.0, 0.0], 
      [0.0, 10.0]],
 
-     [[10.0, 0.0], 
-     [0.0, 10.0]],
-     
      [[10.0, 0.0], 
      [0.0, 10.0]]]
 )
@@ -53,8 +42,7 @@ sigma2_synthetic_kdd_2 = np.array( # This is observation2
 label_0 = np.full(100, 0)
 label_1 = np.full(100, 1)
 label_2 = np.full(100, 2)
-label_3 = np.full(100, 3)
-z_synthetic_n = np.concatenate([label_0,label_1,label_2,label_3])
+z_synthetic_n = np.concatenate([label_0,label_1,label_2])
 #z_synthetic_nk = np.random.multinomial(n=1, pvals=pi_synthetic_k, size=N)
 #_, z_synthetic_n = np.where(z_synthetic_nk == 1)
 # x_nd_1 will be the observation1 of Multimodal-GMM
@@ -120,7 +108,7 @@ plt.suptitle('Synthetic data for Multimodal-GMM:Observation1', fontsize=20)
 plt.title('Number of data:' + str(N) + ', Number of clusters:' + str(K), loc='left')
 plt.xlabel('$x_1$'); plt.ylabel('$x_2$')
 plt.colorbar()
-#plt.savefig("./image/data1.png")
+plt.savefig("./dataset/data2d_1.png")
 plt.show()
 plt.close()
 
@@ -134,11 +122,11 @@ plt.suptitle('Synthetic data for Multimodal-GMM:Observation2', fontsize=20)
 plt.title('Number of data:' + str(N) + ', Number of clusters:' + str(K), loc='left')
 plt.xlabel('$x_1$'); plt.ylabel('$x_2$')
 plt.colorbar()
-#plt.savefig("./image/data2.png")
+plt.savefig("./dataset/data2d_2.png")
 plt.show()
 plt.close()
 
 ############################## Save synthetic data as .txt files ##############################
-np.savetxt('./dataset/data1.txt', x_nd_1) # Corresponds to x_1 in the graphical model
-np.savetxt('./dataset/data2.txt', x_nd_2) # Corresponds to x_2 in the graphical model
-np.savetxt('./dataset/true_label.txt', z_synthetic_n) # # True label (True z_n)
+np.save('./dataset/data2d_1.npy', x_nd_1) # Corresponds to x_1 in the graphical model
+np.save('./dataset/data2d_2.npy', x_nd_2) # Corresponds to x_2 in the graphical model
+np.save('./dataset/true_label2d.npy', z_synthetic_n) # # True label (True z_n)

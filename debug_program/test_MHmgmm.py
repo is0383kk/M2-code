@@ -54,7 +54,7 @@ print(f"Number of clusters: {K}"); print(f"Number of data: {len(c_nd_A)}"); prin
 print("Initializing parameters")
 # Set hyperparameters
 beta = 1.0; m_d_A = np.repeat(0.0, dim); m_d_B = np.repeat(0.0, dim) # Hyperparameters for \mu^A, \mu^B
-w_dd_A = np.identity(dim) * 0.02; w_dd_B = np.identity(dim) * 0.02 # Hyperparameters for \Lambda^A, \Lambda^B
+w_dd_A = np.identity(dim) * 0.05; w_dd_B = np.identity(dim) * 0.05 # Hyperparameters for \Lambda^A, \Lambda^B
 nu = dim
 
 # Initializing \mu, \Lambda
@@ -264,7 +264,7 @@ for i in range(iteration):
     accept_count_AtoB[i] = count_AtoB; accept_count_BtoA[i] = count_BtoA
      
     #if i == 0 or (i+1) % 50 == 0 or i == (iteration-1): 
-    print(f"====> Epoch: {i+1}, ARI_A:{ARI_A[i]}, ARI_B:{ARI_B[i]}, cappa:{concidence[i]}")
+    print(f"=> Epoch: {i+1}, A:{ARI_A[i]}, B:{ARI_B[i]}, C:{concidence[i]}, A2B:{int(accept_count_AtoB[i])}, B2A:{int(accept_count_BtoA[i])}")
     
     # 値を記録
     _, w_n_A = np.where(w_dk_A == 1); _, w_n_B = np.where(w_dk_B == 1)
@@ -304,7 +304,7 @@ plt.close()
 plt.plot(range(0,iteration), ARI_A, marker="None",label="ARI_A")
 plt.plot(range(0,iteration), ARI_B, marker="None",label="ARI_B")
 plt.xlabel('iteration'); plt.ylabel('ARI')
-plt.ylim(0,)
+plt.ylim(0,1)
 plt.legend()
 plt.title('ARI')
 plt.savefig(dir_name+"/ari.png")
@@ -315,7 +315,7 @@ plt.close()
 plt.plot(range(0,D), cat_liks_A, marker="None",label="cat_liks_A")
 plt.plot(range(0,D), cat_liks_B, marker="None",label="cat_liks_B")
 plt.xlabel('Data num'); plt.ylabel('liks')
-plt.ylim(0,)
+plt.ylim(0,1)
 plt.legend()
 plt.title('liks')
 plt.savefig(dir_name+"/liks.png")

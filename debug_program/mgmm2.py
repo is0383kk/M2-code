@@ -1,22 +1,21 @@
 import numpy as np
-from scipy.stats import multivariate_normal, wishart, dirichlet 
+from scipy.stats import multivariate_normal, wishart, dirichlet # 多次元ガウス分布, ウィシャート分布, ディリクレ分布
 import matplotlib.pyplot as plt
 from sklearn.metrics.cluster import adjusted_rand_score as ari
-
 
 ###### ここから人工データ生成に関して ######
 
 # 1つ目の観測のK個の真の平均を指定と真の分散共分散行列を指定
 # 各カテゴリの1次元正規分布の平均 (K=1:0,K=2:30,K=3:60)
-#mu_truth_kd_1 = np.array([[0], [30], [60]])
+mu_truth_kd_1 = np.array([[0], [30], [60]])
 # 各カテゴリの1次元正規分布の分散 (すべて5)
-#sigma2_truth_kdd_1 = np.array([[5,0], [5,0], [5,0]])
+sigma2_truth_kdd_1 = np.array([[5,0], [5,0], [5,0]])
 
 # 2つ目の観測のK個の真の平均を指定と真の分散共分散行列を指定
 # 各カテゴリの1次元正規分布の平均(K=1:-10,K=2:-40,K=3:-80)
-#mu_truth_kd_2 = np.array([[-10], [-40], [-80]])
+mu_truth_kd_2 = np.array([[-10], [-40], [-80]])
 # 各カテゴリの1次元正規分布の分散 (すべて5)
-#sigma2_truth_kdd_2 = np.array([[0,5], [0,5], [0,5]])
+sigma2_truth_kdd_2 = np.array([[0,5], [0,5], [0,5]])
 
 # 多変量正規分布を使用する場合は以下を使用しパラメータを調整（次元数は2）
 """
@@ -55,7 +54,7 @@ sigma2_truth_kdd_2 = np.array(
      [-15.0, 250.0]]]
 )
 """
-"""
+
 # 各カテゴリ100個ずつ生成するように指定
 cat_data_n = 100 # １つのカテゴリに対して生成するデータ数
 cat_0 = np.full(cat_data_n, 0); cat_1 = np.full(cat_data_n, 1); cat_2 = np.full(cat_data_n, 2)
@@ -72,7 +71,7 @@ x_nd_2 = np.array([
         loc=mu_truth_kd_2[k], scale=sigma2_truth_kdd_2[k][1], size=1
     ).flatten() for k in z_truth_n
 ])
-"""
+
 # 多変量正規分布を使用する場合は以下を使用し人工データを生成
 """
 x_nd_1 = np.array([
@@ -86,14 +85,14 @@ x_nd_2 = np.array([
     ).flatten() for k in z_truth_n
 ])
 """
+
+# カテゴリ数
 K = 3
-#x_nd_1 = np.loadtxt("./dataset/data1.txt");x_nd_2 = np.loadtxt("./dataset/data2.txt");z_truth_n = np.loadtxt("./dataset/true_label.txt"); D = len(x_nd_1); dim = len(x_nd_1[0])
-x_nd_1 = np.load("./dataset/data1d_1.npy");x_nd_2 = np.load("./dataset/data1d_2.npy");z_truth_n = np.load("./dataset/true_label1d.npy"); 
-#print(x_nd_1)
-D = len(x_nd_1);dim = len(x_nd_1[0])
-#c_nd_A = np.loadtxt("./samedata.txt") c_nd_B = np.loadtxt("./samedata.txt");z_truth_n = np.loadtxt("./samelabel.txt")
-
-
+# データ総数
+D = len(x_nd_1)
+# 次元数を設定:(固定)
+dim = len(x_nd_1[0])
+print(x_nd_1)
 print(f"カテゴリ数:{K}")
 print(f"データ総数:{len(x_nd_1)}")
 print(f"データ次元数:{len(x_nd_1[0])}")
@@ -107,7 +106,7 @@ beta = 1.0
 m_d_1 = np.repeat(0.0, dim); m_d_2 = np.repeat(0.0, dim)
 
 # lambdaの事前分布のパラメータを指定
-w_dd_1 = np.identity(dim) * 0.01; w_dd_2 = np.identity(dim) * 0.01
+w_dd_1 = np.identity(dim) * 0.05; w_dd_2 = np.identity(dim) * 0.05 
 nu = dim
 
 #\mu, \lambdaの初期値を決定
@@ -154,12 +153,12 @@ trace_nu_ik_1 = [np.repeat(nu, K)]; trace_nu_ik_2 = [np.repeat(nu, K)]
 
 # z の事前分布
 z_nk = np.zeros((D, K)) 
-pi = np.array([1/K, 1/K, 1/K]) # 混合比は一様分布を仮定
+pi = np.array([0.33,0.33,0.33]) # 混合比は一様分布を仮定
 z_nk = np.random.multinomial(n=1, pvals=pi, size=D)
 ###### ここまで事前分布のパラメータを設定 ######
 
 ###### ここからギブスサンプリング ######
-iteration = 100 # ギブスサンプリングの試行回数を指定
+iteration = 1 # ギブスサンプリングの試行回数を指定
 ARI = np.zeros((iteration)) # イテレーション毎のARIを格納する変数
 
 # ギブスサンプリング
@@ -243,5 +242,5 @@ for i in range(iteration):
 plt.plot(range(0,iteration), ARI, marker="None")
 plt.xlabel('iteration')
 plt.ylabel('ARI')
-#plt.savefig("ari.png")
+plt.savefig("ari.png")
 plt.show()
