@@ -9,8 +9,8 @@ pi_synthetic_k = np.array([0.25, 0.25, 0.25]) # Mixing ratio for synthetic data
 
 mu_synthetic_kd_1 = np.array( # This is observation1
     [[0.0, 0.0], 
-     [13.0, 13.0], 
-     [-10.0, 20.0]]
+     [13.0, 10.0], 
+     [-10.0, 18.0]]
 )
 sigma2_synthetic_kdd_1 = np.array( # This is observation1
     [[[10.0, 0.0], 

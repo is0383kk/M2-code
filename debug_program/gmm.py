@@ -6,7 +6,7 @@ from sklearn.metrics.cluster import adjusted_rand_score as ari
 
 K = 3
 x_nd = np.load("./dataset/data1d_1.npy")
-#x_nd = np.load("./dataset/data1d_2.npy")
+x_nd = np.load("./dataset/data1d_2.npy")
 #x_nd = np.loadtxt("./dataset/data2.txt")
 z_truth_n = np.load("./dataset/true_label1d.npy") 
 # データ総数

@@ -243,5 +243,6 @@ for i in range(iteration):
 plt.plot(range(0,iteration), ARI, marker="None")
 plt.xlabel('iteration')
 plt.ylabel('ARI')
-#plt.savefig("ari.png")
+plt.ylim(0,1)
+plt.savefig("ari.png")
 plt.show()

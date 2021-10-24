@@ -40,10 +40,10 @@ if not os.path.exists(npy_dir):    os.mkdir(npy_dir)
 if not os.path.exists(reconA_dir):    os.mkdir(reconA_dir)
 if not os.path.exists(reconB_dir):    os.mkdir(reconB_dir)
 
-K = 4
-c_nd_A = np.loadtxt("./dataset/data1.txt");
+K = 3
+c_nd_A = np.load("./dataset/data1d_1.npy");
 #c_nd_A = np.loadtxt("./dataset/data.txt") 
-c_nd_B = np.loadtxt("./dataset/data2.txt");z_truth_n = np.loadtxt("./dataset/true_label.txt") 
+c_nd_B = np.load("./dataset/data1d_2.npy");z_truth_n = np.load("./dataset/true_label1d.npy") 
 
 #c_nd_A = np.loadtxt("./samedata.txt") c_nd_B = np.loadtxt("./samedata.txt");z_truth_n = np.loadtxt("./samelabel.txt")
 D = len(c_nd_A)
@@ -54,7 +54,7 @@ print(f"Number of clusters: {K}"); print(f"Number of data: {len(c_nd_A)}"); prin
 print("Initializing parameters")
 # Set hyperparameters
 beta = 1.0; m_d_A = np.repeat(0.0, dim); m_d_B = np.repeat(0.0, dim) # Hyperparameters for \mu^A, \mu^B
-w_dd_A = np.identity(dim) * 0.05; w_dd_B = np.identity(dim) * 0.05 # Hyperparameters for \Lambda^A, \Lambda^B
+w_dd_A = np.identity(dim) * 0.1; w_dd_B = np.identity(dim) * 0.1 # Hyperparameters for \Lambda^A, \Lambda^B
 nu = dim
 
 # Initializing \mu, \Lambda
@@ -279,6 +279,8 @@ for i in range(iteration):
     np.save(npy_dir+'/lambdaA_'+str(iteration)+'.npy', lambda_kdd_A); np.save(npy_dir+'/lambdaB_'+str(iteration)+'.npy', lambda_kdd_B)
 
 print(f"maxA:{max(ARI_A)}, max_B:{max(ARI_B)}, max_c:{max(concidence)}")
+print(f"meanA:{np.round(np.mean(ARI_A[-20:-1]),3)}, meanB:{np.round(np.mean(ARI_B[-20:-1]),3)}, meanc:{np.round(np.mean(concidence[-20:-1]),3)}")
+print(f"stdA:{np.round(np.std(ARI_A[-20:-1]),3)}, stdB:{np.round(np.std(ARI_B[-20:-1]),3)}, stdc:{np.round(np.std(concidence[-20:-1]),3)}")
 # 受容回数
 plt.figure()
 #plt.ylim(0,)
