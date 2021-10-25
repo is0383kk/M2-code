@@ -290,7 +290,8 @@ for it in range(mutual_iteration):
         # 受容回数
         accept_count_AtoB[i] = count_AtoB; accept_count_BtoA[i] = count_BtoA
         
-        if i == 0 or (i+1) % 10 == 0 or i == (iteration-1): print(f"=> Ep: {i+1}, A: {ARI_A[i]}, B: {ARI_B[i]}, C:{concidence[i]}, A2B:{int(accept_count_AtoB[i])}, B2A:{int(accept_count_BtoA[i])}")
+        if i == 0 or (i+1) % 10 == 0 or i == (iteration-1): 
+            print(f"=> Ep: {i+1}, A: {ARI_A[i]}, B: {ARI_B[i]}, C:{concidence[i]}, A2B:{int(accept_count_AtoB[i])}, B2A:{int(accept_count_BtoA[i])}")
 
 
         # 値を記録
