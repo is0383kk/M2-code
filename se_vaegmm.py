@@ -46,7 +46,7 @@ if not os.path.exists(result_dir):    os.mkdir(result_dir)
 
 ############################## Prepareing Dataset ##############################
 # MNIST左右回転設定
-angle = 25 # 回転角度
+angle = 90 # 回転角度
 trans_ang1 = transforms.Compose([transforms.RandomRotation(degrees=(-angle,-angle)), transforms.ToTensor()]) # -angle度回転設定
 trans_ang2 = transforms.Compose([transforms.RandomRotation(degrees=(angle,angle)), transforms.ToTensor()]) # angle度回転設定
 # データセット定義
@@ -220,7 +220,7 @@ for it in range(mutual_iteration):
             if args.mode == 0:
                 judge_r = -1 # 全棄却用
             elif args.mode == 1:
-                judge_r = 1000 # 全棄却用
+                judge_r = 1000 # 全受容用
             else:
                 cat_liks_B[d] = multivariate_normal.pdf(c_nd_A[d], 
                                 mean=mu_kd_A[np.argmax(w_dk_B[d])], 
