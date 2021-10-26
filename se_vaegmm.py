@@ -130,16 +130,6 @@ for it in range(mutual_iteration):
     #trace_w_ikdd_A = [np.repeat(w_dd_A.reshape((1, dim, dim)), K, axis=0)]; trace_w_ikdd_B = [np.repeat(w_dd_B.reshape((1, dim, dim)), K, axis=0)]
     #trace_nu_ik_A = [np.repeat(nu, K)]; trace_nu_ik_B = [np.repeat(nu, K)]
 
-    # エージェントB：０イテレーション目のLi:Bのカテゴリ
-    for k in range(K):
-        tmp_eta_nB[k] = np.diag(-0.5 * (c_nd_B - mu_kd_B[k]).dot(lambda_kdd_B[k]).dot((c_nd_B - mu_kd_B[k]).T)).copy() 
-        tmp_eta_nB[k] += 0.5 * np.log(np.linalg.det(lambda_kdd_B[k]) + 1e-7)
-        eta_dkB[:, k] = np.exp(tmp_eta_nB[k])
-    eta_dkB /= np.sum(eta_dkB, axis=1, keepdims=True) # Normalization
-    for d in range(D):
-        w_dk_B[d] = np.random.multinomial(n=1, pvals=eta_dkB[d], size=1).flatten() # w^Bのカテゴリ尤度計算用にサンプリング
-        cat_liks_B[d] = eta_dkB[d][np.argmax(w_dk_B[d])]
-
     iteration = args.mh_iter # M−H法のイテレーション数
     ARI_A = np.zeros((iteration)); ARI_B = np.zeros((iteration)); concidence = np.zeros((iteration))
     accept_count_AtoB = np.zeros((iteration)); accept_count_BtoA = np.zeros((iteration)) # Number of acceptation
