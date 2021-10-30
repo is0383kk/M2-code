@@ -4,115 +4,29 @@ import matplotlib.pyplot as plt
 from sklearn.metrics.cluster import adjusted_rand_score as ari
 
 
-###### ここから人工データ生成に関して ######
-
-# 1つ目の観測のK個の真の平均を指定と真の分散共分散行列を指定
-# 各カテゴリの1次元正規分布の平均 (K=1:0,K=2:30,K=3:60)
-#mu_truth_kd_1 = np.array([[0], [30], [60]])
-# 各カテゴリの1次元正規分布の分散 (すべて5)
-#sigma2_truth_kdd_1 = np.array([[5,0], [5,0], [5,0]])
-
-# 2つ目の観測のK個の真の平均を指定と真の分散共分散行列を指定
-# 各カテゴリの1次元正規分布の平均(K=1:-10,K=2:-40,K=3:-80)
-#mu_truth_kd_2 = np.array([[-10], [-40], [-80]])
-# 各カテゴリの1次元正規分布の分散 (すべて5)
-#sigma2_truth_kdd_2 = np.array([[0,5], [0,5], [0,5]])
-
-# 多変量正規分布を使用する場合は以下を使用しパラメータを調整（次元数は2）
-"""
-# K個の真の平均を指定
-mu_truth_kd_1 = np.array(
-    [[5.0, 35.0], 
-     [-20.0, -10.0], 
-     [30.0, -20.0]]
-)
-
-# K個の真の平均を指定
-mu_truth_kd_2 = np.array(
-    [[5.0, 35.0], 
-     [-20.0, -10.0], 
-     [30.0, -20.0]]
-)
-sigma2_truth_kdd_1 = np.array(
-    [[[250.0, 65.0], 
-    [65.0, 270.0]],
-
-     [[125.0, -45.0], 
-     [-45.0, 175.0]],
-
-     [[210.0, -15.0], 
-     [-15.0, 250.0]]]
-)
-# K個の真の分散共分散行列を指定
-sigma2_truth_kdd_2 = np.array(
-    [[[250.0, 65.0], 
-    [65.0, 270.0]],
-
-     [[125.0, -45.0], 
-     [-45.0, 175.0]],
-
-     [[210.0, -15.0], 
-     [-15.0, 250.0]]]
-)
-"""
-"""
-# 各カテゴリ100個ずつ生成するように指定
-cat_data_n = 100 # １つのカテゴリに対して生成するデータ数
-cat_0 = np.full(cat_data_n, 0); cat_1 = np.full(cat_data_n, 1); cat_2 = np.full(cat_data_n, 2)
-z_truth_n = np.concatenate([cat_0,cat_1,cat_2]) # 真のカテゴリ
-
-# 上で定義した1次元正規分布のパラメータを元に人工データを生成
-x_nd_1 = np.array([
-    np.random.normal(
-        loc=mu_truth_kd_1[k], scale=sigma2_truth_kdd_1[k][0], size=1
-    ).flatten() for k in z_truth_n
-])
-x_nd_2 = np.array([
-    np.random.normal(
-        loc=mu_truth_kd_2[k], scale=sigma2_truth_kdd_2[k][1], size=1
-    ).flatten() for k in z_truth_n
-])
-"""
-# 多変量正規分布を使用する場合は以下を使用し人工データを生成
-"""
-x_nd_1 = np.array([
-    np.random.multivariate_normal(
-        mean=mu_truth_kd_1[k], cov=sigma2_truth_kdd_1[k], size=1
-    ).flatten() for k in z_truth_n
-])
-x_nd_2 = np.array([
-    np.random.multivariate_normal(
-        mean=mu_truth_kd_2[k], cov=sigma2_truth_kdd_2[k], size=1
-    ).flatten() for k in z_truth_n
-])
-"""
-K = 3
-#x_nd_1 = np.loadtxt("./dataset/data1.txt");x_nd_2 = np.loadtxt("./dataset/data2.txt");z_truth_n = np.loadtxt("./dataset/true_label.txt"); D = len(x_nd_1); dim = len(x_nd_1[0])
-x_nd_1 = np.load("./dataset/data1d_1.npy");x_nd_2 = np.load("./dataset/data1d_2.npy");z_truth_n = np.load("./dataset/true_label1d.npy"); 
-#print(x_nd_1)
-D = len(x_nd_1);dim = len(x_nd_1[0])
-#c_nd_A = np.loadtxt("./samedata.txt") c_nd_B = np.loadtxt("./samedata.txt");z_truth_n = np.loadtxt("./samelabel.txt")
-
-
-print(f"カテゴリ数:{K}")
-print(f"データ総数:{len(x_nd_1)}")
-print(f"データ次元数:{len(x_nd_1[0])}")
-###### ここまで人工データ生成 ######
-
+K = 3 # サイン総数
+# データセット読み込み
+x_nd_1 = np.load("./dataset/data1d_1.npy")
+x_nd_2 = np.load("./dataset/data1d_2.npy")
+z_truth_n = np.load("./dataset/true_label1d.npy") 
+D = len(x_nd_1);dim = len(x_nd_1[0]) # データ総数
 
 ###### ここから事前分布のパラメータを設定 ######
-print("パラメータの初期化")
 # muの事前分布のパラメータを指定
 beta = 1.0
-m_d_1 = np.repeat(0.0, dim); m_d_2 = np.repeat(0.0, dim)
+m_d_1 = np.repeat(0.0, dim)
+m_d_2 = np.repeat(0.0, dim)
 
 # lambdaの事前分布のパラメータを指定
-w_dd_1 = np.identity(dim) * 0.01; w_dd_2 = np.identity(dim) * 0.01
+w_dd_1 = np.identity(dim) * 0.01
+w_dd_2 = np.identity(dim) * 0.01
 nu = dim
 
 #\mu, \lambdaの初期値を決定
-mu_kd_1 = np.empty((K, dim)); lambda_kdd_1 = np.empty((K, dim, dim))
-mu_kd_2 = np.empty((K, dim)); lambda_kdd_2 = np.empty((K, dim, dim))
+mu_kd_1 = np.empty((K, dim))
+lambda_kdd_1 = np.empty((K, dim, dim))
+mu_kd_2 = np.empty((K, dim))
+lambda_kdd_2 = np.empty((K, dim, dim))
 for k in range(K):
     # クラスタkの精度行列をサンプル
     lambda_kdd_1[k] = wishart.rvs(df=nu, scale=w_dd_1, size=1)
@@ -129,33 +43,31 @@ for k in range(K):
 # パラメータを初期化
 eta_nk = np.zeros((D, K))
 z_nk = np.zeros((D, K))
-beta_hat_k_1 = np.zeros(K) ;beta_hat_k_2 = np.zeros(K)
-m_hat_kd_1 = np.zeros((K, dim)); m_hat_kd_2 = np.zeros((K, dim))
-w_hat_kdd_1 = np.zeros((K, dim, dim)); w_hat_kdd_2 = np.zeros((K, dim, dim))
-nu_hat_k_1 = np.zeros(K); nu_hat_k_2 = np.zeros(K)
+beta_hat_k_1 = np.zeros(K)
+beta_hat_k_2 = np.zeros(K)
+m_hat_kd_1 = np.zeros((K, dim))
+m_hat_kd_2 = np.zeros((K, dim))
+w_hat_kdd_1 = np.zeros((K, dim, dim))
+w_hat_kdd_2 = np.zeros((K, dim, dim))
+nu_hat_k_1 = np.zeros(K)
+nu_hat_k_2 = np.zeros(K)
 
 # 推移の確認用の変数
 trace_z_in = [np.repeat(np.nan, D)]
-trace_mu_ikd_1 = [mu_kd_1.copy()]; trace_mu_ikd_2 = [mu_kd_2.copy()]
-trace_lambda_ikdd_1 = [lambda_kdd_1.copy()]; trace_lambda_ikdd_2 = [lambda_kdd_2.copy()]
-trace_beta_ik_1 = [np.repeat(beta, K)]; trace_beta_ik_2 = [np.repeat(beta, K)]
-trace_m_ikd_1 = [np.repeat(m_d_1.reshape((1, dim)), K, axis=0)]; trace_m_ikd_2 = [np.repeat(m_d_2.reshape((1, dim)), K, axis=0)]
-trace_w_ikdd_1 = [np.repeat(w_dd_1.reshape((1, dim, dim)), K, axis=0)]; trace_w_ikdd_2 = [np.repeat(w_dd_2.reshape((1, dim, dim)), K, axis=0)]
-trace_nu_ik_1 = [np.repeat(nu, K)]; trace_nu_ik_2 = [np.repeat(nu, K)]
+trace_mu_ikd_1 = [mu_kd_1.copy()]
+trace_mu_ikd_2 = [mu_kd_2.copy()]
+trace_lambda_ikdd_1 = [lambda_kdd_1.copy()]
+trace_lambda_ikdd_2 = [lambda_kdd_2.copy()]
+trace_beta_ik_1 = [np.repeat(beta, K)]
+trace_beta_ik_2 = [np.repeat(beta, K)]
+trace_m_ikd_1 = [np.repeat(m_d_1.reshape((1, dim)), K, axis=0)]
+trace_m_ikd_2 = [np.repeat(m_d_2.reshape((1, dim)), K, axis=0)]
+trace_w_ikdd_1 = [np.repeat(w_dd_1.reshape((1, dim, dim)), K, axis=0)]
+trace_w_ikdd_2 = [np.repeat(w_dd_2.reshape((1, dim, dim)), K, axis=0)]
+trace_nu_ik_1 = [np.repeat(nu, K)]
+trace_nu_ik_2 = [np.repeat(nu, K)]
 
-
-# 混合比率の初期値（混合比をサンプリングしないのでコメント化）
-#alpha_k = np.repeat(2.0, K) # piの事前分布のパラメータを指定
-#pi_k = dirichlet.rvs(alpha=alpha_k, size=1).flatten()
-#print(pi_k)
-#alpha_hat_k = np.zeros(K)
-#trace_pi_ik = [pi_k.copy()]
-#trace_alpha_ik = [alpha_k.copy()]
-
-# z の事前分布
-z_nk = np.zeros((D, K)) 
-pi = np.array([1/K, 1/K, 1/K]) # 混合比は一様分布を仮定
-z_nk = np.random.multinomial(n=1, pvals=pi, size=D)
+z_nk = np.random.multinomial(1, [1/K]*K, size=D) # zの初期化
 ###### ここまで事前分布のパラメータを設定 ######
 
 ###### ここからギブスサンプリング ######
@@ -217,13 +129,6 @@ for i in range(iteration):
     for d in range(D):
         z_nk[d] = np.random.multinomial(n=1, pvals=eta_nk[d], size=1).flatten()
         z_pred_n.append(np.argmax(z_nk[d]))
-
-    # \pi のサンプリングに関して（サンプリングしないのでコメント化）
-    # 混合比率のパラメータを計算：ベイズ推論式(4.45)
-    #alpha_hat_k = np.sum(z_nk, axis=0) + alpha_k
-    
-    # piをサンプル：式(4.44)
-    #pi_k = dirichlet.rvs(size=1, alpha=alpha_hat_k).flatten()
     
     ARI[i] = np.round(ari(z_truth_n,z_pred_n),3)
     print(f"ARI:{ARI[i]}")
@@ -237,12 +142,10 @@ for i in range(iteration):
     trace_m_ikd_1.append(m_hat_kd_1.copy())
     trace_w_ikdd_1.append(w_hat_kdd_1.copy())
     trace_nu_ik_1.append(nu_hat_k_1.copy())
-    #trace_pi_ik.append(pi_k.copy())
-    #trace_alpha_ik.append(alpha_hat_k.copy())
 
 plt.plot(range(0,iteration), ARI, marker="None")
 plt.xlabel('iteration')
 plt.ylabel('ARI')
 plt.ylim(0,1)
-plt.savefig("ari.png")
+#plt.savefig("ari.png")
 plt.show()
