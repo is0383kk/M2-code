@@ -276,7 +276,8 @@ for it in range(mutual_iteration):
         # Kappa係数の計算
         concidence[i] = np.round((a_observed - a_chance) / (1 - a_chance), 3)
         # ARIの計算
-        ARI_A[i] = np.round(calc_ari(pred_label_A, z_truth_n)[0],3); ARI_B[i] = np.round(calc_ari(pred_label_B, z_truth_n)[0],3)
+        #ARI_A[i] = np.round(calc_ari(pred_label_A, z_truth_n)[0],3); ARI_B[i] = np.round(calc_ari(pred_label_B, z_truth_n)[0],3)
+        ARI_A[i] = np.round(ari(z_truth_n,pred_label_A),3); ARI_B[i] = np.round(ari(z_truth_n,pred_label_B),3) # ARI
         # 受容回数
         accept_count_AtoB[i] = count_AtoB; accept_count_BtoA[i] = count_BtoA
         
