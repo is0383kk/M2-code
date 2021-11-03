@@ -12,6 +12,8 @@ import argparse
 #from custom_data import CustomDataset
 from tool import visualize_gmm
 
+
+
 parser = argparse.ArgumentParser(description='Symbol emergence based on VAE+GMM Example')
 parser.add_argument('--batch-size', type=int, default=10, metavar='B', help='input batch size for training')
 parser.add_argument('--vae-iter', type=int, default=100, metavar='V', help='number of VAE iteration')
@@ -190,9 +192,11 @@ for it in range(mutual_iteration):
             # 更新後のパラメータからmuをサンプル
             mu_kd_B[k] = np.random.multivariate_normal(mean=m_hat_kd_B[k], cov=np.linalg.inv(beta_hat_k_B[k] * lambda_kdd_B[k]), size=1).flatten()
 
+            """
             for d in range(D):
                 mu_d_B[d] = mu_kd_B[np.argmax(w_dk[d])]
                 var_d_B[d] = np.diag(np.linalg.inv(lambda_kdd_B[np.argmax(w_dk[d])]))
+            """
 
         """~~~~~~~~~~~~~~~~~~~~~~~~~~~~Sp:B->Li:Aここから~~~~~~~~~~~~~~~~~~~~~~~~~~~~"""
         w_dk = np.zeros((D, K)); 
@@ -245,45 +249,27 @@ for it in range(mutual_iteration):
             lambda_kdd_A[k] = wishart.rvs(size=1, df=nu_hat_k_A[k], scale=w_hat_kdd_A[k])
             # 更新後のパラメータからmuをサンプル
             mu_kd_A[k] = np.random.multivariate_normal(mean=m_hat_kd_A[k], cov=np.linalg.inv(beta_hat_k_A[k] * lambda_kdd_A[k]), size=1).flatten()
-
+            """
             for d in range(D):
                 mu_d_A[d] = mu_kd_A[np.argmax(w_dk[d])]
                 var_d_A[d] = np.diag(np.linalg.inv(lambda_kdd_A[np.argmax(w_dk[d])]))
+            """
 
         ############################## 評価値計算 ##############################
-        # cappa 係数の計算
-        sum_same_w = 0.0
-        a_chance = 0.0
-        prob_w = [0.0 for i in range(K)]
-        w_count_a = [0.0 for i in range(K)]
-        w_count_b = [0.0 for i in range(K)]
-
-        for d in range(D):
-            if np.argmax(w_dk_A[d]) == np.argmax(w_dk_B[d]):
-                sum_same_w += 1
-
-            for w in range(K):
-                if np.argmax(w_dk_A[d]) == w:
-                    w_count_a[w] += 1
-                if np.argmax(w_dk_B[d]) == w:
-                    w_count_b[w] += 1
-
-        for w in range(K):
-            prob_w[w] = (w_count_a[w] / D) * (w_count_b[w] / D)
-            a_chance += prob_w[w]
-        a_observed = (sum_same_w / D)
-
         # Kappa係数の計算
-        concidence[i] = np.round((a_observed - a_chance) / (1 - a_chance), 3)
+        concidence[i] = np.round(cohen_kappa_score(pred_label_A,pred_label_B),3)
         # ARIの計算
-        #ARI_A[i] = np.round(calc_ari(pred_label_A, z_truth_n)[0],3); ARI_B[i] = np.round(calc_ari(pred_label_B, z_truth_n)[0],3)
-        ARI_A[i] = np.round(ari(z_truth_n,pred_label_A),3); ARI_B[i] = np.round(ari(z_truth_n,pred_label_B),3) # ARI
+        ARI_A[i] = np.round(calc_ari(pred_label_A, z_truth_n)[0],3); ARI_B[i] = np.round(calc_ari(pred_label_B, z_truth_n)[0],3)
         # 受容回数
         accept_count_AtoB[i] = count_AtoB; accept_count_BtoA[i] = count_BtoA
         
         if i == 0 or (i+1) % 10 == 0 or i == (iteration-1): 
             print(f"=> Ep: {i+1}, A: {ARI_A[i]}, B: {ARI_B[i]}, C:{concidence[i]}, A2B:{int(accept_count_AtoB[i])}, B2A:{int(accept_count_BtoA[i])}")
-
+        for d in range(D):
+            mu_d_A[d] = mu_kd_A[np.argmax(w_dk[d])]
+            var_d_A[d] = np.diag(np.linalg.inv(lambda_kdd_A[np.argmax(w_dk[d])]))
+            mu_d_B[d] = mu_kd_B[np.argmax(w_dk[d])]
+            var_d_B[d] = np.diag(np.linalg.inv(lambda_kdd_B[np.argmax(w_dk[d])]))
 
         # 値を記録
         #_, w_n_A = np.where(w_dk_A == 1); _, w_n_B = np.where(w_dk_B == 1)

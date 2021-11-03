@@ -4,6 +4,7 @@ from scipy.stats import wishart, multivariate_normal
 import matplotlib.pyplot as plt
 import argparse
 from sklearn.metrics.cluster import adjusted_rand_score as ari
+from sklearn.metrics import cohen_kappa_score
 
 parser = argparse.ArgumentParser(description='M-H algorithm M-GMM Example')
 parser.add_argument('--sign', type=int, default=3, metavar='K', help='Number of sign')
@@ -234,7 +235,7 @@ for i in range(iteration):
     accept_count_BtoA[i] = count_BtoA # 受容回数
 
     print(f"=> Epoch: {i+1}, ARI_A:{ARI_A[i]}, ARI_B:{ARI_B[i]}, Concidence:{concidence[i]}, Accept_AtoB:{int(accept_count_AtoB[i])}, Accept_BtoA:{int(accept_count_BtoA[i])}")
-    
+    print(f"Cappa{np.round(cohen_kappa_score(pred_label_A,pred_label_B),3)}")
     # 値を記録
     _, w_n_A = np.where(w_dk_A == 1)
     _, w_n_B = np.where(w_dk_B == 1)
