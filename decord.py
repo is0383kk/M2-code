@@ -89,8 +89,8 @@ def decode_from_mgmm(load_iteration, sigma, K, decode_k, sample_num, manual, dir
 
 def main():
     load_iteration = 0
-    decode_from_mgmm(load_iteration=load_iteration, sigma=0, K=10, decode_k=None, sample_num=1, manual=True, dir_name=dir_name)
-    decode_from_mgmm(load_iteration=load_iteration, sigma=0, K=10, decode_k=None, sample_num=8, manual=False, dir_name=dir_name)
+    #decode_from_mgmm(load_iteration=load_iteration, sigma=0, K=10, decode_k=None, sample_num=1, manual=True, dir_name=dir_name)
+    #decode_from_mgmm(load_iteration=load_iteration, sigma=0, K=10, decode_k=None, sample_num=8, manual=False, dir_name=dir_name)
     vae_module.plot_latent(iteration=load_iteration, all_loader=all_loader1, model_dir=dir_name, agent="A") # plot latent space of VAE on Agent A
     vae_module.plot_latent(iteration=load_iteration, all_loader=all_loader2, model_dir=dir_name, agent="B") # plot latent space of VAE on Agent B
 
