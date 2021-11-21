@@ -15,6 +15,7 @@ class VAE(nn.Module):
         super(VAE, self).__init__()
 
         self.fc1 = nn.Linear(784, 256)
+        self.fc12 = nn.Linear(256, 256)
         self.fc21 = nn.Linear(256, x_dim)
         self.fc22 = nn.Linear(256, x_dim)
         self.fc3 = nn.Linear(x_dim, 256)
@@ -27,7 +28,8 @@ class VAE(nn.Module):
 
     def encode(self, o_d): # o_d : Ovservation
         h1 = F.relu(self.fc1(o_d))
-        return self.fc21(h1), self.fc22(h1)
+        h2 = F.relu(self.fc12(h1))
+        return self.fc21(h2), self.fc22(h2)
 
     def reparameterize(self, mu, logvar):
         std = torch.exp(0.5*logvar)
