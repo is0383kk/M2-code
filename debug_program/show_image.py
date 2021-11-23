@@ -13,8 +13,8 @@ from torch.utils.data.dataset import Subset
 import matplotlib.animation as animation
 
 
-root = "/home/is0383kk/workspace/mnist_png"
-
+root = "/home/is0383kk/workspace/mnist_png/mnist_png"
+#root = "../obj_data/train" # データセット読み込み先パス
 #前処理
 data_transforms = transforms.Compose([
         #transforms.RandomResizedCrop(224),
@@ -65,12 +65,12 @@ class ToNDarray(object):
         return x
 
 # データのプロット
-custom_dataset = GenDataset(root, trans_ang1, train=True)
+custom_dataset = CustomDataset(root, trans_ang1, train=True)
 #custom_dataset = CustomDataset(root, data_transforms, train=True)
-print(f"データセット数 :{len(custom_dataset)}")
+#print(f"データセット数 :{len(custom_dataset)}")
 batch_size = 20
-custom_loader = torch.utils.data.DataLoader(dataset=custom_dataset, batch_size=batch_size, shuffle=False)
-print("batch_size",batch_size)
+custom_loader = torch.utils.data.DataLoader(dataset=custom_dataset, batch_size=batch_size, shuffle=True)
+#print("batch_size",batch_size)
 
 
 # データセット分割調整
@@ -80,7 +80,7 @@ n_samples = len(trainval_dataset)
 train_size = int(n_samples * 0.13) # 9000枚
 #train_size = int(n_samples * 0.25) # 15000枚
 #train_size = int(n_samples * 0.01) # 600枚
-print(f"Number of training datasets :{train_size}")
+#print(f"Number of training datasets :{train_size}")
 subset1_indices = list(range(0,train_size)); subset2_indices = list(range(train_size,n_samples)) 
 train_dataset = Subset(trainval_dataset, subset1_indices); val_dataset = Subset(trainval_dataset, subset2_indices)
 train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=32, shuffle=False)
@@ -93,7 +93,7 @@ def show(img):
 
 for i, (images, labels) in enumerate(custom_loader):
     print(f"i :{i}")
-    print(f"images :{images}, {images.size()}")
+    #print(f"images :{images}, {images.size()}")
     trans = ToNDarray()
     print(f"labels :{labels}")
     #print(images)
@@ -104,7 +104,7 @@ for i, (images, labels) in enumerate(custom_loader):
     #imgs = transform(im)
     images = torchvision.utils.make_grid(images, padding=1)
     plt.imshow(np.transpose(images, (1,2,0)), interpolation="nearest")
-    plt.savefig('ang2_75.png')
+    #plt.savefig('ang2_75.png')
     
     plt.show()
     plt.close()

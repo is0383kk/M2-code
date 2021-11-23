@@ -27,7 +27,7 @@ device = torch.device("cuda" if args.cuda else "cpu")
 
 ############################## Making directory ##############################
 
-file_name = "ncom"; model_dir = "./model"; dir_name = "./model/"+file_name# debugフォルダに保存される
+file_name = "debug"; model_dir = "./model"; dir_name = "./model/"+file_name# debugフォルダに保存される
 graphA_dir = "./model/"+file_name+"/graphA"; graphB_dir = "./model/"+file_name+"/graphB" # 各種グラフの保存先
 pth_dir = "./model/"+file_name+"/pth";npy_dir = "./model/"+file_name+"/npy"
 reconA_dir = model_dir+"/"+file_name+"/reconA/graph_dist"; reconB_dir = model_dir+"/"+file_name+"/reconB/graph_dist"
@@ -61,9 +61,26 @@ train_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=args.batc
 train_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=args.batch_size, shuffle=False) # train_loader for agent B
 all_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=D, shuffle=False) # データセット総数分のローダ
 all_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=D, shuffle=False) # データセット総数分のローダ
-print(f"D={D}, VAE_iter:{args.vae_iter}, MH_iter:{args.mh_iter}"); 
+
+# カスタムデータローダ
+from custom_data import CustomDataset
+root = "/home/is0383kk/workspace/mnist_png/mnist_png"
+#root = "./obj_data/"
+obj_a_dataset = CustomDataset(root, train=True, transform=trans_ang1)
+obj_b_dataset = CustomDataset(root, train=True, transform=trans_ang2)
+n_samples = len(obj_a_dataset)
+D = int(n_samples * (1/6)) # データ総数
+subset1_indices1 = list(range(0, D)); subset2_indices1 = list(range(D, n_samples)) 
+subset1_indices2 = list(range(0, D)); subset2_indices2 = list(range(D, n_samples)) 
+train_dataset1 = Subset(obj_a_dataset, subset1_indices1); val_dataset1 = Subset(obj_a_dataset, subset2_indices1)
+train_dataset2 = Subset(obj_b_dataset, subset1_indices1); val_dataset2 = Subset(obj_b_dataset, subset2_indices2)
+train_loader1 = torch.utils.data.DataLoader(dataset=train_dataset1, batch_size=args.batch_size, shuffle=False)
+train_loader2 = torch.utils.data.DataLoader(dataset=train_dataset2, batch_size=args.batch_size, shuffle=False)
+all_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=D, shuffle=False) # データセット総数分のローダ
+all_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=D, shuffle=False) # データセット総数分のローダ
 
 import vae_module
+import cnn_vae_module
 
 def decode_from_mgmm(load_iteration, sigma, K, decode_k, sample_num, manual, dir_name):
     for i in range(K):
@@ -74,7 +91,9 @@ def decode_from_mgmm(load_iteration, sigma, K, decode_k, sample_num, manual, dir
                                 sample_num=sample_num, 
                                 manual=manual, 
                                 model_dir=dir_name, agent="A")
-        vae_module.decode(iteration=load_iteration, decode_k=i, sample_num=sample_num, 
+        #vae_module.decode(iteration=load_iteration, decode_k=i, sample_num=sample_num, 
+        #                  sample_d=sample_d, manual=manual, model_dir=dir_name, agent="A")
+        cnn_vae_module.decode(iteration=load_iteration, decode_k=i, sample_num=sample_num, 
                           sample_d=sample_d, manual=manual, model_dir=dir_name, agent="A")
 
         sample_d = visualize_gmm(iteration=load_iteration, # load iteration model 
@@ -84,15 +103,19 @@ def decode_from_mgmm(load_iteration, sigma, K, decode_k, sample_num, manual, dir
                                 sample_num=sample_num, 
                                 manual=manual, 
                                 model_dir=dir_name, agent="B")
-        vae_module.decode(iteration=load_iteration, decode_k=i, sample_num=sample_num, 
+        #vae_module.decode(iteration=load_iteration, decode_k=i, sample_num=sample_num, 
+        #                  sample_d=sample_d, manual=manual, model_dir=dir_name, agent="B")
+        cnn_vae_module.decode(iteration=load_iteration, decode_k=i, sample_num=sample_num, 
                           sample_d=sample_d, manual=manual, model_dir=dir_name, agent="B")
 
 def main():
     load_iteration = 0
     #decode_from_mgmm(load_iteration=load_iteration, sigma=0, K=10, decode_k=None, sample_num=1, manual=True, dir_name=dir_name)
     #decode_from_mgmm(load_iteration=load_iteration, sigma=0, K=10, decode_k=None, sample_num=8, manual=False, dir_name=dir_name)
-    vae_module.plot_latent(iteration=load_iteration, all_loader=all_loader1, model_dir=dir_name, agent="A") # plot latent space of VAE on Agent A
-    vae_module.plot_latent(iteration=load_iteration, all_loader=all_loader2, model_dir=dir_name, agent="B") # plot latent space of VAE on Agent B
+    #vae_module.plot_latent(iteration=load_iteration, all_loader=all_loader1, model_dir=dir_name, agent="A") # plot latent space of VAE on Agent A
+    #vae_module.plot_latent(iteration=load_iteration, all_loader=all_loader2, model_dir=dir_name, agent="B") # plot latent space of VAE on Agent B
+    cnn_vae_module.plot_latent(iteration=load_iteration, all_loader=all_loader1, model_dir=dir_name, agent="A") # plot latent space of VAE on Agent A
+    cnn_vae_module.plot_latent(iteration=load_iteration, all_loader=all_loader2, model_dir=dir_name, agent="B") # plot latent space of VAE on Agent B
 
 if __name__=="__main__":
     main()

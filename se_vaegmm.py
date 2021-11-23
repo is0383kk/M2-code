@@ -9,14 +9,13 @@ from torchvision import datasets, transforms
 from torchvision.utils import save_image
 from torch.utils.data.dataset import Subset
 import argparse
-#from custom_data import CustomDataset
 from tool import visualize_gmm
 
 
 
 parser = argparse.ArgumentParser(description='Symbol emergence based on VAE+GMM Example')
 parser.add_argument('--batch-size', type=int, default=10, metavar='B', help='input batch size for training')
-parser.add_argument('--vae-iter', type=int, default=100, metavar='V', help='number of VAE iteration')
+parser.add_argument('--vae-iter', type=int, default=75, metavar='V', help='number of VAE iteration')
 parser.add_argument('--mh-iter', type=int, default=100, metavar='M', help='number of M-H mgmm iteration')
 parser.add_argument('--category', type=int, default=10, metavar='K', help='number of category for GMM module')
 parser.add_argument('--mode', type=int, default=-1, metavar='M', help='0:All reject, 1:ALL accept')
@@ -27,7 +26,9 @@ args = parser.parse_args()
 args.cuda = not args.no_cuda and torch.cuda.is_available()
 torch.manual_seed(args.seed)
 device = torch.device("cuda" if args.cuda else "cpu")
+print("CUDA",args.cuda)
 if args.debug is True: args.vae_iter=2; args.mh_iter=2
+
 
 ############################## Making directory ##############################
 file_name = "debug"; model_dir = "./model"; dir_name = "./model/"+file_name# debugフォルダに保存される
@@ -47,9 +48,10 @@ if not os.path.exists(log_dir):    os.mkdir(log_dir)
 if not os.path.exists(result_dir):    os.mkdir(result_dir)
 
 ############################## Prepareing Dataset ##############################
+"""
 # MNIST左右回転設定
-angle_a = 90 # 回転角度
-angle_b = -45 # 回転角度
+angle_a = 0 # 回転角度
+angle_b = 45 # 回転角度
 trans_ang1 = transforms.Compose([transforms.RandomRotation(degrees=(angle_a, angle_a)), transforms.ToTensor()]) # -angle度回転設定
 trans_ang2 = transforms.Compose([transforms.RandomRotation(degrees=(angle_b, angle_b)), transforms.ToTensor()]) # angle度回転設定
 # データセット定義
@@ -65,9 +67,50 @@ train_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=args.batc
 train_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=args.batch_size, shuffle=False) # train_loader for agent B
 all_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=D, shuffle=False) # データセット総数分のローダ
 all_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=D, shuffle=False) # データセット総数分のローダ
-print(f"D={D}, VAE_iter:{args.vae_iter}, MH_iter:{args.mh_iter}, MH_mode:{args.mode}"); 
+"""
+# CIFAR10用
+angle_a = 0 # 回転角度
+angle_b = 45 # 回転角度
+trans_ang1 = transforms.Compose([transforms.RandomRotation(degrees=(angle_a, angle_a)), transforms.Resize((28, 28)), transforms.ToTensor()]) # -angle度回転設定
+trans_ang2 = transforms.Compose([transforms.RandomRotation(degrees=(angle_b, angle_b)), transforms.Resize((28, 28)), transforms.ToTensor()]) # angle度回転設定
+trainval_dataset1 = datasets.CIFAR10(root='./../data', train=True, download=False, transform=trans_ang1)
+trainval_dataset2 = datasets.CIFAR10(root='./../data', train=True, download=False, transform=trans_ang2)
+n_samples = len(trainval_dataset1)
+print(f"n_samples : {n_samples}")
+D = int(n_samples * (1/5)) # データ総数
+subset1_indices1 = list(range(0, D)); subset2_indices1 = list(range(D, n_samples)) 
+subset1_indices2 = list(range(0, D)); subset2_indices2 = list(range(D, n_samples)) 
+train_dataset1 = Subset(trainval_dataset1, subset1_indices1); val_dataset1 = Subset(trainval_dataset1, subset2_indices1)
+train_dataset2 = Subset(trainval_dataset2, subset1_indices1); val_dataset2 = Subset(trainval_dataset2, subset2_indices2)
+train_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=args.batch_size, shuffle=False) # train_loader for agent A
+train_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=args.batch_size, shuffle=False) # train_loader for agent B
+all_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=D, shuffle=False) # データセット総数分のローダ
+all_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=D, shuffle=False) # データセット総数分のローダ
 
+"""
+# カスタムデータローダ
+from custom_data import CustomDataset
+#root = "/home/is0383kk/workspace/mnist_png/mnist_png"
+root = "./obj_data/"
+obj_a_dataset = CustomDataset(root, train=True, transform=trans_ang1)
+obj_b_dataset = CustomDataset(root, train=True, transform=trans_ang2)
+n_samples = len(obj_a_dataset)
+#D = int(n_samples * (1/6)) # データ総数
+D = int(n_samples) # データ総数
+subset1_indices1 = list(range(0, D)); subset2_indices1 = list(range(D, n_samples)) 
+subset1_indices2 = list(range(0, D)); subset2_indices2 = list(range(D, n_samples)) 
+train_dataset1 = Subset(obj_a_dataset, subset1_indices1); val_dataset1 = Subset(obj_a_dataset, subset2_indices1)
+train_dataset2 = Subset(obj_b_dataset, subset1_indices1); val_dataset2 = Subset(obj_b_dataset, subset2_indices2)
+train_loader1 = torch.utils.data.DataLoader(dataset=train_dataset1, batch_size=args.batch_size, shuffle=False)
+train_loader2 = torch.utils.data.DataLoader(dataset=train_dataset2, batch_size=args.batch_size, shuffle=False)
+all_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=D, shuffle=False) # データセット総数分のローダ
+all_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=D, shuffle=False) # データセット総数分のローダ
+"""
+print(f"D={D}, Category:{args.category}")
+print(f"VAE_iter:{args.vae_iter}, Batch_size:{args.batch_size}")
+print(f"MH_iter:{args.mh_iter}, MH_mode:{args.mode}") 
 import vae_module
+import cnn_vae_module
 
 mutual_iteration = 5
 mu_d_A = np.zeros((D)); var_d_A = np.zeros((D)) 
@@ -75,7 +118,7 @@ mu_d_B = np.zeros((D)); var_d_B = np.zeros((D))
 for it in range(mutual_iteration):
     print(f"------------------Mutual learning session {it} begins------------------")
     ############################## Training VAE ##############################
-    c_nd_A, label, loss_list = vae_module.train(
+    c_nd_A, label, loss_list = cnn_vae_module.train(
         iteration=it, # Current iteration
         gmm_mu=torch.from_numpy(mu_d_A), gmm_var=torch.from_numpy(var_d_A), # mu and var estimated by Multimodal-GMM
         epoch=args.vae_iter, 
@@ -83,7 +126,7 @@ for it in range(mutual_iteration):
         model_dir=dir_name, agent="A"
     )
     # VAE module on Agent B
-    c_nd_B, label, loss_list = vae_module.train(
+    c_nd_B, label, loss_list = cnn_vae_module.train(
         iteration=it, # Current iteration
         gmm_mu=torch.from_numpy(mu_d_B), gmm_var=torch.from_numpy(var_d_B), # mu and var estimated by Multimodal-GMM
         epoch=args.vae_iter, 
@@ -100,7 +143,7 @@ for it in range(mutual_iteration):
     ############################## Initializing parameters ##############################
     # Set hyperparameters
     beta = 1.0; m_d_A = np.repeat(0.0, dim); m_d_B = np.repeat(0.0, dim) # Hyperparameters for \mu^A, \mu^B
-    w_dd_A = np.identity(dim) * 0.01; w_dd_B = np.identity(dim) * 0.01 # Hyperparameters for \Lambda^A, \Lambda^B
+    w_dd_A = np.identity(dim) * 0.1; w_dd_B = np.identity(dim) * 0.1 # Hyperparameters for \Lambda^A, \Lambda^B
     nu = dim
 
     # Initializing \mu, \Lambda
@@ -223,9 +266,9 @@ for it in range(mutual_iteration):
                                 cov=np.linalg.inv(lambda_kdd_A[np.argmax(w_dk_B[d])]),
                                 )
                 cat_liks_A[d] = multivariate_normal.pdf(c_nd_A[d], 
-                        mean=mu_kd_A[np.argmax(w_dk_A[d])], 
-                        cov=np.linalg.inv(lambda_kdd_A[np.argmax(w_dk_A[d])]),
-                        )
+                                mean=mu_kd_A[np.argmax(w_dk_A[d])], 
+                                cov=np.linalg.inv(lambda_kdd_A[np.argmax(w_dk_A[d])]),
+                                )
                 judge_r = cat_liks_B[d] / cat_liks_A[d] # AとBのカテゴリ尤度から受容率の計算
                 judge_r = min(1, judge_r) # 受容率
             rand_u = np.random.rand() # 一様変数のサンプリング
