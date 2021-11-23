@@ -12,7 +12,7 @@ device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 x_dim = 12
 ngf = 64
 ndf = 64
-nc = 3
+nc = 1
 class VAE(nn.Module):
     def __init__(self):
         super(VAE, self).__init__()
@@ -170,10 +170,10 @@ def train(iteration, gmm_mu, gmm_var, epoch, train_loader, batch_size, all_loade
     
     #グラフ処理
     plt.figure()
-    plt.plot(range(0,epoch), loss_list, color="blue", label="loss")
+    plt.plot(range(0,epoch), loss_list, color="blue", label="ELBO")
     if iteration!=0: 
         loss_0 = np.load(model_dir+'/npy/loss'+agent+'_0.npy')
-        plt.plot(range(0,epoch), loss_0, color="red", label="loss_I0")
+        plt.plot(range(0,epoch), loss_0, color="red", label="ELBO_I0")
     plt.xlabel('epoch'); plt.ylabel('ELBO'); plt.legend(loc='lower right')
     plt.savefig(model_dir+'/graph'+agent+'/vae_loss_'+str(iteration)+'.png')
     plt.close()
