@@ -13,5 +13,6 @@ def print_cmx(y_true, y_pred):
     plt.figure(figsize = (10,7))
     sns.heatmap(df_cmx, annot=False)
     plt.show()
+    #plt.savefig(result_dir+"/ari"+str(it)+".png")
 
 print_cmx([0,1,2,3,4,0,1,2,3,4],[0,1,2,3,2,0,1,2,3,4])

@@ -5,6 +5,9 @@ from random import random
 import matplotlib.pyplot as plt
 from sklearn.metrics.cluster import adjusted_rand_score as ARI
 from scipy.stats import multivariate_normal
+import pandas as pd
+import seaborn as sns
+from sklearn.metrics import confusion_matrix
 
 
 
@@ -118,6 +121,18 @@ def visualize_ls(iteration, z, labels, save_dir, agent):
         plt.scatter(p[0], p[1], marker="${}$".format(l),c=colors[l],s=100)
     plt.savefig(save_dir+'/graph'+agent+'/pca_'+str(iteration)+'.png')
     plt.close()
+
+def cmx(iteration, y_true, y_pred, agent, save_dir):
+    labels = sorted(list(set(y_true)))
+    cmx = confusion_matrix(y_true, y_pred, labels=labels)
+    #cmd = ConfusionMatrixDisplay(cmx,display_labels=None)
+    #cmd.plot()
+    df_cmx = pd.DataFrame(cmx, index=labels, columns=labels)
+
+    plt.figure(figsize = (10,7))
+    sns.heatmap(df_cmx, annot=False)
+    plt.savefig(save_dir+"/cm_"+agent+str(iteration)+".png")
+    #plt.show()
 
 def calc_ari( results, correct ):
     K = np.max(results)+1     # Number of category

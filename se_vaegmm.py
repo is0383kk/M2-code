@@ -2,7 +2,7 @@ import os
 import numpy as np
 from scipy.stats import wishart, multivariate_normal
 import matplotlib.pyplot as plt
-from tool import calc_ari
+from tool import calc_ari,cmx
 from sklearn.metrics import cohen_kappa_score
 import torch
 from torchvision import datasets, transforms
@@ -48,6 +48,7 @@ if not os.path.exists(log_dir):    os.mkdir(log_dir)
 if not os.path.exists(result_dir):    os.mkdir(result_dir)
 
 ############################## Prepareing Dataset ##############################
+"""
 # MNIST左右回転設定
 angle_a = 0 # 回転角度
 angle_b = 75 # 回転角度
@@ -66,8 +67,8 @@ train_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=args.batc
 train_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=args.batch_size, shuffle=False) # train_loader for agent B
 all_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=D, shuffle=False) # データセット総数分のローダ
 all_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=D, shuffle=False) # データセット総数分のローダ
-
 """
+
 # CIFAR10用
 angle_a = 0 # 回転角度
 angle_b = 45 # 回転角度
@@ -86,7 +87,7 @@ train_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=args.batc
 train_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=args.batch_size, shuffle=False) # train_loader for agent B
 all_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=D, shuffle=False) # データセット総数分のローダ
 all_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=D, shuffle=False) # データセット総数分のローダ
-"""
+
 
 """
 # カスタムデータローダ
@@ -112,6 +113,7 @@ print(f"VAE_iter:{args.vae_iter}, Batch_size:{args.batch_size}")
 print(f"MH_iter:{args.mh_iter}, MH_mode:{args.mode}") 
 import vae_module
 import cnn_vae_module
+import cnn_vae_module2
 
 mutual_iteration = 5
 mu_d_A = np.zeros((D)); var_d_A = np.zeros((D)) 
@@ -119,7 +121,7 @@ mu_d_B = np.zeros((D)); var_d_B = np.zeros((D))
 for it in range(mutual_iteration):
     print(f"------------------Mutual learning session {it} begins------------------")
     ############################## Training VAE ##############################
-    c_nd_A, label, loss_list = cnn_vae_module.train(
+    c_nd_A, label, loss_list = cnn_vae_module2.train(
         iteration=it, # Current iteration
         gmm_mu=torch.from_numpy(mu_d_A), gmm_var=torch.from_numpy(var_d_A), # mu and var estimated by Multimodal-GMM
         epoch=args.vae_iter, 
@@ -127,7 +129,7 @@ for it in range(mutual_iteration):
         model_dir=dir_name, agent="A"
     )
     # VAE module on Agent B
-    c_nd_B, label, loss_list = cnn_vae_module.train(
+    c_nd_B, label, loss_list = cnn_vae_module2.train(
         iteration=it, # Current iteration
         gmm_mu=torch.from_numpy(mu_d_B), gmm_var=torch.from_numpy(var_d_B), # mu and var estimated by Multimodal-GMM
         epoch=args.vae_iter, 
@@ -196,7 +198,7 @@ for it in range(mutual_iteration):
 
         for d in range(D): # 潜在変数をサンプル：式(4.93)
             w_dk_A[d] = np.random.multinomial(n=1, pvals=eta_dkA[d], size=1).flatten() # w^Aのサンプリング
-            #pred_label_A.append(np.argmax(w_dk_A[d]))
+            pred_label_A.append(np.argmax(w_dk_A[d]))
             
             if args.mode == 0:
                 judge_r = -1 # 全棄却用
@@ -219,7 +221,7 @@ for it in range(mutual_iteration):
                 count_AtoB = count_AtoB + 1 # 受容した回数をカウント
             else: 
                 w_dk[d] = w_dk_B[d]
-            pred_label_B.append(np.argmax(w_dk[d])) # 予測カテゴリ
+            #pred_label_B.append(np.argmax(w_dk[d])) # 予測カテゴリ
 
         # 更新後のw^Liを用いてエージェントBの\mu, \lambdaの再サンプリング
         for k in range(K):
@@ -255,7 +257,7 @@ for it in range(mutual_iteration):
         # 潜在変数をサンプル：式(4.93)
         for d in range(D):
             w_dk_B[d] = np.random.multinomial(n=1, pvals=eta_dkB[d], size=1).flatten() # w^Bのサンプリング
-            #pred_label_B.append(np.argmax(w_dk_B[d])) # 予測カテゴリ
+            pred_label_B.append(np.argmax(w_dk_B[d])) # 予測カテゴリ
             
             if args.mode == 0:
                 judge_r = -1 # 全棄却用
@@ -278,7 +280,8 @@ for it in range(mutual_iteration):
                 count_BtoA = count_BtoA + 1 # 受容した回数をカウント
             else: 
                 w_dk[d] = w_dk_A[d]
-            pred_label_A.append(np.argmax(w_dk[d])) # 予測カテゴリ
+            #pred_label_A.append(np.argmax(w_dk[d])) # 予測カテゴリ
+        
         # 更新後のw^Liを用いてエージェントBの\mu, \lambdaの再サンプリング
         for k in range(K):
             # muの事後分布のパラメータを計算
@@ -365,4 +368,9 @@ for it in range(mutual_iteration):
     plt.savefig(result_dir+"/ari"+str(it)+".png")
     #plt.show()
     plt.close()
+
+    _, result_a = calc_ari(pred_label_A, z_truth_n)
+    _, result_b = calc_ari(pred_label_B, z_truth_n)
+    cmx(iteration=it, y_true=z_truth_n, y_pred=result_a, agent="A", save_dir=result_dir)
+    cmx(iteration=it, y_true=z_truth_n, y_pred=result_b, agent="B", save_dir=result_dir)
     print(f"Iteration:{it} Done:max_A: {max(ARI_A)}, max_B: {max(ARI_B)}, max_c:{max(concidence)}")

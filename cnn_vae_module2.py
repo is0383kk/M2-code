@@ -12,7 +12,7 @@ device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 x_dim = 12
 ngf = 64
 ndf = 64
-nc = 1
+nc = 3
 class VAE(nn.Module):
     def __init__(self):
         super(VAE, self).__init__()
@@ -35,7 +35,7 @@ class VAE(nn.Module):
             nn.ReLU(),
 
             # state size. (ndf*4) x 4 x 4
-            nn.Conv2d(ndf * 4, 1024, 4, 1, 0, bias=False),
+            nn.Conv2d(ndf * 4, 512, 4, 1, 0, bias=False),
             # nn.BatchNorm2d(1024),
             #nn.LeakyReLU(0.2, inplace=True),
             nn.ReLU(),
@@ -44,7 +44,7 @@ class VAE(nn.Module):
 
         self.decoder = nn.Sequential(
             # input is Z, going into a convolution
-            nn.ConvTranspose2d(     1024, ngf * 8, 4, 1, 0, bias=False),
+            nn.ConvTranspose2d(     512, ngf * 8, 4, 1, 0, bias=False),
             #nn.BatchNorm2d(ngf * 8),
             nn.ReLU(),
             
@@ -68,12 +68,12 @@ class VAE(nn.Module):
             nn.Sigmoid()
             # state size. (nc) x 64 x 64
         )
-        self.fc1 = nn.Linear(1024, 512)
+        #self.fc1 = nn.Linear(1024, 512)
         self.fc21 = nn.Linear(512, x_dim)
         self.fc22 = nn.Linear(512, x_dim)
 
         self.fc3 = nn.Linear(x_dim, 512)
-        self.fc4 = nn.Linear(512, 1024)
+        #self.fc4 = nn.Linear(512, 1024)
 
         self.lrelu = nn.LeakyReLU()
         self.relu = nn.ReLU()
@@ -85,13 +85,13 @@ class VAE(nn.Module):
 
     def encode(self, x):
         conv = self.encoder(x);
-        h1 = self.fc1(conv.view(-1, 1024))
-        return self.fc21(h1), self.fc22(h1)
+        #h1 = self.fc1(conv.view(-1, 1024))
+        return self.fc21(conv.view(-1, 512)), self.fc22(conv.view(-1, 512))
 
     def decode(self, x_d):
         h3 = self.relu(self.fc3(x_d))
-        deconv_input = self.fc4(h3)
-        deconv_input = deconv_input.view(-1,1024,1,1)
+        #deconv_input = self.fc4(h3)
+        deconv_input = h3.view(-1,512,1,1)
         return self.decoder(deconv_input)
 
     def reparameterize(self, mu, logvar):

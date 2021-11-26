@@ -2,7 +2,7 @@ import os
 import numpy as np
 from scipy.stats import wishart 
 import matplotlib.pyplot as plt
-from tool import calc_ari
+from tool import calc_ari, visualize_gmm
 from sklearn.metrics import cohen_kappa_score
 import torch
 from torchvision import datasets, transforms
@@ -10,7 +10,7 @@ from torchvision.utils import save_image
 from torch.utils.data.dataset import Subset
 import argparse
 #from custom_data import CustomDataset
-from tool import visualize_gmm
+from PIL import Image
 
 parser = argparse.ArgumentParser(description='Symbol emergence based on VAE+GMM Example')
 parser.add_argument('--batch-size', type=int, default=10, metavar='B', help='input batch size for training')
@@ -27,7 +27,7 @@ device = torch.device("cuda" if args.cuda else "cpu")
 
 ############################## Making directory ##############################
 
-file_name = "CIFAR"; model_dir = "./model"; dir_name = "./model/"+file_name# debugフォルダに保存される
+file_name = "debug"; model_dir = "./model"; dir_name = "./model/"+file_name# debugフォルダに保存される
 graphA_dir = "./model/"+file_name+"/graphA"; graphB_dir = "./model/"+file_name+"/graphB" # 各種グラフの保存先
 pth_dir = "./model/"+file_name+"/pth";npy_dir = "./model/"+file_name+"/npy"
 reconA_dir = model_dir+"/"+file_name+"/reconA/graph_dist"; reconB_dir = model_dir+"/"+file_name+"/reconB/graph_dist"
@@ -43,12 +43,13 @@ if not os.path.exists(reconB_dir):    os.mkdir(reconB_dir)
 if not os.path.exists(log_dir):    os.mkdir(log_dir)
 if not os.path.exists(result_dir):    os.mkdir(result_dir)
 
-"""
+
 ############################## Prepareing Dataset ##############################
 # MNIST左右回転設定
-angle = 25 # 回転角度
-trans_ang1 = transforms.Compose([transforms.RandomRotation(degrees=(-angle,-angle)), transforms.ToTensor()]) # -angle度回転設定
-trans_ang2 = transforms.Compose([transforms.RandomRotation(degrees=(angle,angle)), transforms.ToTensor()]) # angle度回転設定
+angle_a = 0 # 回転角度
+angle_b = 75 # 回転角度
+trans_ang1 = transforms.Compose([transforms.RandomRotation(degrees=(-angle_a,-angle_a)), transforms.ToTensor()]) # -angle度回転設定
+trans_ang2 = transforms.Compose([transforms.RandomRotation(degrees=(angle_b,angle_b)), transforms.ToTensor()]) # angle度回転設定
 # データセット定義
 trainval_dataset1 = datasets.MNIST('./../data', train=True, transform=trans_ang1, download=False) # Agent A用 MNIST
 trainval_dataset2 = datasets.MNIST('./../data', train=True, transform=trans_ang2, download=False) # Agent B用 MNIST
@@ -63,6 +64,7 @@ train_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=args.batc
 all_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=D, shuffle=False) # データセット総数分のローダ
 all_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=D, shuffle=False) # データセット総数分のローダ
 
+"""
 # カスタムデータローダ
 from custom_data import CustomDataset
 root = "/home/is0383kk/workspace/mnist_png/mnist_png"
@@ -80,8 +82,9 @@ train_loader2 = torch.utils.data.DataLoader(dataset=train_dataset2, batch_size=a
 all_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=D, shuffle=False) # データセット総数分のローダ
 all_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=D, shuffle=False) # データセット総数分のローダ
 """
+"""
 angle_a = 0 # 回転角度
-angle_b = 45 # 回転角度
+angle_b = 75 # 回転角度
 trans_ang1 = transforms.Compose([transforms.RandomRotation(degrees=(angle_a, angle_a)), transforms.Resize((28, 28)), transforms.ToTensor()]) # -angle度回転設定
 trans_ang2 = transforms.Compose([transforms.RandomRotation(degrees=(angle_b, angle_b)), transforms.Resize((28, 28)), transforms.ToTensor()]) # angle度回転設定
 trainval_dataset1 = datasets.CIFAR10(root='./../data', train=True, download=False, transform=trans_ang1)
@@ -97,10 +100,28 @@ train_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=args.batc
 train_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=args.batch_size, shuffle=False) # train_loader for agent B
 all_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=D, shuffle=False) # データセット総数分のローダ
 all_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=D, shuffle=False) # データセット総数分のローダ
-
+"""
 
 import vae_module
 import cnn_vae_module
+
+def get_concat_h_multi_resize(dir_name, agent, resample=Image.BICUBIC):
+    im0 = Image.open(dir_name+'/recon'+agent+'/manual_0.png');im1 = Image.open(dir_name+'/recon'+agent+'/manual_1.png')
+    im2 = Image.open(dir_name+'/recon'+agent+'/manual_2.png');im3 = Image.open(dir_name+'/recon'+agent+'/manual_3.png')
+    im4 = Image.open(dir_name+'/recon'+agent+'/manual_4.png');im5 = Image.open(dir_name+'/recon'+agent+'/manual_5.png')
+    im6 = Image.open(dir_name+'/recon'+agent+'/manual_6.png');im7 = Image.open(dir_name+'/recon'+agent+'/manual_7.png')
+    im8 = Image.open(dir_name+'/recon'+agent+'/manual_8.png');im9 = Image.open(dir_name+'/recon'+agent+'/manual_9.png')
+    im_list = [im0, im1, im2, im3, im4, im5, im6, im7, im8, im9]
+    min_height = min(im.height for im in im_list)
+    im_list_resize = [im.resize((int(im.width * min_height / im.height), min_height),resample=resample)
+                      for im in im_list]
+    total_width = sum(im.width for im in im_list_resize)
+    dst = Image.new('RGB', (total_width, min_height))
+    pos_x = 0
+    for im in im_list_resize:
+        dst.paste(im, (pos_x, 0))
+        pos_x += im.width
+    dst.save(dir_name+'/recon'+agent+'/mnist.png')
 
 def decode_from_mgmm(load_iteration, sigma, K, decode_k, sample_num, manual, dir_name):
     for i in range(K):
@@ -111,10 +132,10 @@ def decode_from_mgmm(load_iteration, sigma, K, decode_k, sample_num, manual, dir
                                 sample_num=sample_num, 
                                 manual=manual, 
                                 model_dir=dir_name, agent="A")
-        #vae_module.decode(iteration=load_iteration, decode_k=i, sample_num=sample_num, 
-        #                  sample_d=sample_d, manual=manual, model_dir=dir_name, agent="A")
-        cnn_vae_module.decode(iteration=load_iteration, decode_k=i, sample_num=sample_num, 
+        vae_module.decode(iteration=load_iteration, decode_k=i, sample_num=sample_num, 
                           sample_d=sample_d, manual=manual, model_dir=dir_name, agent="A")
+        #cnn_vae_module.decode(iteration=load_iteration, decode_k=i, sample_num=sample_num, 
+        #                  sample_d=sample_d, manual=manual, model_dir=dir_name, agent="A")
 
         sample_d = visualize_gmm(iteration=load_iteration, # load iteration model 
                                 sigma=sigma,
@@ -123,19 +144,21 @@ def decode_from_mgmm(load_iteration, sigma, K, decode_k, sample_num, manual, dir
                                 sample_num=sample_num, 
                                 manual=manual, 
                                 model_dir=dir_name, agent="B")
-        #vae_module.decode(iteration=load_iteration, decode_k=i, sample_num=sample_num, 
-        #                  sample_d=sample_d, manual=manual, model_dir=dir_name, agent="B")
-        cnn_vae_module.decode(iteration=load_iteration, decode_k=i, sample_num=sample_num, 
+        vae_module.decode(iteration=load_iteration, decode_k=i, sample_num=sample_num, 
                           sample_d=sample_d, manual=manual, model_dir=dir_name, agent="B")
+        #cnn_vae_module.decode(iteration=load_iteration, decode_k=i, sample_num=sample_num, 
+        #                  sample_d=sample_d, manual=manual, model_dir=dir_name, agent="B")
 
 def main():
     load_iteration = 0
     decode_from_mgmm(load_iteration=load_iteration, sigma=0, K=10, decode_k=None, sample_num=1, manual=True, dir_name=dir_name)
     decode_from_mgmm(load_iteration=load_iteration, sigma=0, K=10, decode_k=None, sample_num=8, manual=False, dir_name=dir_name)
-    #vae_module.plot_latent(iteration=load_iteration, all_loader=all_loader1, model_dir=dir_name, agent="A") # plot latent space of VAE on Agent A
-    #vae_module.plot_latent(iteration=load_iteration, all_loader=all_loader2, model_dir=dir_name, agent="B") # plot latent space of VAE on Agent B
-    cnn_vae_module.plot_latent(iteration=load_iteration, all_loader=all_loader1, model_dir=dir_name, agent="A") # plot latent space of VAE on Agent A
-    cnn_vae_module.plot_latent(iteration=load_iteration, all_loader=all_loader2, model_dir=dir_name, agent="B") # plot latent space of VAE on Agent B
+    vae_module.plot_latent(iteration=load_iteration, all_loader=all_loader1, model_dir=dir_name, agent="A") # plot latent space of VAE on Agent A
+    vae_module.plot_latent(iteration=load_iteration, all_loader=all_loader2, model_dir=dir_name, agent="B") # plot latent space of VAE on Agent B
+    #cnn_vae_module.plot_latent(iteration=load_iteration, all_loader=all_loader1, model_dir=dir_name, agent="A") # plot latent space of VAE on Agent A
+    #cnn_vae_module.plot_latent(iteration=load_iteration, all_loader=all_loader2, model_dir=dir_name, agent="B") # plot latent space of VAE on Agent B
+    get_concat_h_multi_resize(dir_name = dir_name, agent="A")
+    get_concat_h_multi_resize(dir_name = dir_name, agent="B")
 
 if __name__=="__main__":
     main()
