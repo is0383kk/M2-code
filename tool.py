@@ -104,8 +104,6 @@ def visualize_ls(iteration, z, labels, save_dir, agent):
     plt.figure(figsize=(10,10))
     for p, l in zip(points_tsne, labels):
         plt.title("TSNE", fontsize=24)
-        plt.xlabel("Latent space:xlabel", fontsize=21)
-        plt.ylabel("Latent space:ylabel", fontsize=21)
         plt.tick_params(labelsize=17)
         plt.scatter(p[0], p[1], marker="${}$".format(l),c=colors[l],s=100)
     plt.savefig(save_dir+'/graph'+agent+'/tsne_'+str(iteration)+'.png')
@@ -115,8 +113,6 @@ def visualize_ls(iteration, z, labels, save_dir, agent):
     plt.figure(figsize=(10,10))
     for p, l in zip(points_pca, labels):
         plt.title("PCA", fontsize=24)
-        plt.xlabel("Latent space:xlabel", fontsize=21)
-        plt.ylabel("Latent space:ylabel", fontsize=21)
         plt.tick_params(labelsize=17)
         plt.scatter(p[0], p[1], marker="${}$".format(l),c=colors[l],s=100)
     plt.savefig(save_dir+'/graph'+agent+'/pca_'+str(iteration)+'.png')

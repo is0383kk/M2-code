@@ -12,7 +12,7 @@ device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 x_dim = 12
 ngf = 64
 ndf = 64
-nc = 1
+nc = 3
 class VAE(nn.Module):
     def __init__(self):
         super(VAE, self).__init__()

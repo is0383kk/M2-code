@@ -15,8 +15,8 @@ from tool import visualize_gmm
 
 parser = argparse.ArgumentParser(description='Symbol emergence based on VAE+GMM Example')
 parser.add_argument('--batch-size', type=int, default=10, metavar='B', help='input batch size for training')
-parser.add_argument('--vae-iter', type=int, default=100, metavar='V', help='number of VAE iteration')
-parser.add_argument('--mh-iter', type=int, default=100, metavar='M', help='number of M-H mgmm iteration')
+parser.add_argument('--vae-iter', type=int, default=150, metavar='V', help='number of VAE iteration')
+parser.add_argument('--mh-iter', type=int, default=150, metavar='M', help='number of M-H mgmm iteration')
 parser.add_argument('--category', type=int, default=10, metavar='K', help='number of category for GMM module')
 parser.add_argument('--mode', type=int, default=-1, metavar='M', help='0:All reject, 1:ALL accept')
 parser.add_argument('--debug', type=bool, default=False, metavar='D', help='Debug mode')
@@ -47,9 +47,10 @@ if not os.path.exists(reconB_dir):    os.mkdir(reconB_dir)
 if not os.path.exists(log_dir):    os.mkdir(log_dir)
 if not os.path.exists(result_dir):    os.mkdir(result_dir)
 
-############################## Prepareing Dataset ##############################
+############################## Prepareing Dataset #############################
 """
 # MNIST左右回転設定
+print("Dataset : MNIST")
 angle_a = 0 # 回転角度
 angle_b = 75 # 回転角度
 trans_ang1 = transforms.Compose([transforms.RandomRotation(degrees=(angle_a, angle_a)), transforms.ToTensor()]) # -angle度回転設定
@@ -69,9 +70,11 @@ all_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=D, shuffle=
 all_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=D, shuffle=False) # データセット総数分のローダ
 """
 
+
 # CIFAR10用
-angle_a = 0 # 回転角度
-angle_b = 45 # 回転角度
+print("Dataset : CIFAR10")
+angle_a = 25 # 回転角度
+angle_b = -25 # 回転角度
 trans_ang1 = transforms.Compose([transforms.RandomRotation(degrees=(angle_a, angle_a)), transforms.Resize((28, 28)), transforms.ToTensor()]) # -angle度回転設定
 trans_ang2 = transforms.Compose([transforms.RandomRotation(degrees=(angle_b, angle_b)), transforms.Resize((28, 28)), transforms.ToTensor()]) # angle度回転設定
 trainval_dataset1 = datasets.CIFAR10(root='./../data', train=True, download=False, transform=trans_ang1)
@@ -79,6 +82,7 @@ trainval_dataset2 = datasets.CIFAR10(root='./../data', train=True, download=Fals
 n_samples = len(trainval_dataset1)
 print(f"n_samples : {n_samples}")
 D = int(n_samples * (1/5)) # データ総数
+#D = int(n_samples) # データ総数
 subset1_indices1 = list(range(0, D)); subset2_indices1 = list(range(D, n_samples)) 
 subset1_indices2 = list(range(0, D)); subset2_indices2 = list(range(D, n_samples)) 
 train_dataset1 = Subset(trainval_dataset1, subset1_indices1); val_dataset1 = Subset(trainval_dataset1, subset2_indices1)
@@ -92,8 +96,14 @@ all_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=D, shuffle=
 """
 # カスタムデータローダ
 from custom_data import CustomDataset
+print("Dataset : CUSTOM")
 #root = "/home/is0383kk/workspace/mnist_png/mnist_png"
-root = "./obj_data/"
+#root = "./obj25_per10/"
+root = "./obj25_per10/"
+angle_a = 0 # 回転角度
+angle_b = 0 # 回転角度
+trans_ang1 = transforms.Compose([transforms.RandomRotation(degrees=(angle_a, angle_a)), transforms.ToTensor()]) # -angle度回転設定
+trans_ang2 = transforms.Compose([transforms.RandomRotation(degrees=(angle_b, angle_b)), transforms.ToTensor()]) # angle度回転設定
 obj_a_dataset = CustomDataset(root, train=True, transform=trans_ang1)
 obj_b_dataset = CustomDataset(root, train=True, transform=trans_ang2)
 n_samples = len(obj_a_dataset)
@@ -146,7 +156,7 @@ for it in range(mutual_iteration):
     ############################## Initializing parameters ##############################
     # Set hyperparameters
     beta = 1.0; m_d_A = np.repeat(0.0, dim); m_d_B = np.repeat(0.0, dim) # Hyperparameters for \mu^A, \mu^B
-    w_dd_A = np.identity(dim) * 0.05; w_dd_B = np.identity(dim) * 0.05 # Hyperparameters for \Lambda^A, \Lambda^B
+    w_dd_A = np.identity(dim) * 0.08; w_dd_B = np.identity(dim) * 0.08 # Hyperparameters for \Lambda^A, \Lambda^B
     nu = dim
 
     # Initializing \mu, \Lambda
@@ -198,7 +208,7 @@ for it in range(mutual_iteration):
 
         for d in range(D): # 潜在変数をサンプル：式(4.93)
             w_dk_A[d] = np.random.multinomial(n=1, pvals=eta_dkA[d], size=1).flatten() # w^Aのサンプリング
-            pred_label_A.append(np.argmax(w_dk_A[d]))
+            #pred_label_A.append(np.argmax(w_dk_A[d]))
             
             if args.mode == 0:
                 judge_r = -1 # 全棄却用
@@ -221,7 +231,7 @@ for it in range(mutual_iteration):
                 count_AtoB = count_AtoB + 1 # 受容した回数をカウント
             else: 
                 w_dk[d] = w_dk_B[d]
-            #pred_label_B.append(np.argmax(w_dk[d])) # 予測カテゴリ
+            pred_label_B.append(np.argmax(w_dk[d])) # 予測カテゴリ
 
         # 更新後のw^Liを用いてエージェントBの\mu, \lambdaの再サンプリング
         for k in range(K):
@@ -257,7 +267,7 @@ for it in range(mutual_iteration):
         # 潜在変数をサンプル：式(4.93)
         for d in range(D):
             w_dk_B[d] = np.random.multinomial(n=1, pvals=eta_dkB[d], size=1).flatten() # w^Bのサンプリング
-            pred_label_B.append(np.argmax(w_dk_B[d])) # 予測カテゴリ
+            #pred_label_B.append(np.argmax(w_dk_B[d])) # 予測カテゴリ
             
             if args.mode == 0:
                 judge_r = -1 # 全棄却用
@@ -280,7 +290,7 @@ for it in range(mutual_iteration):
                 count_BtoA = count_BtoA + 1 # 受容した回数をカウント
             else: 
                 w_dk[d] = w_dk_A[d]
-            #pred_label_A.append(np.argmax(w_dk[d])) # 予測カテゴリ
+            pred_label_A.append(np.argmax(w_dk[d])) # 予測カテゴリ
         
         # 更新後のw^Liを用いてエージェントBの\mu, \lambdaの再サンプリング
         for k in range(K):
