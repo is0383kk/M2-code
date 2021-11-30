@@ -15,7 +15,7 @@ from tool import visualize_gmm
 
 parser = argparse.ArgumentParser(description='Symbol emergence based on VAE+GMM Example')
 parser.add_argument('--batch-size', type=int, default=10, metavar='B', help='input batch size for training')
-parser.add_argument('--vae-iter', type=int, default=150, metavar='V', help='number of VAE iteration')
+parser.add_argument('--vae-iter', type=int, default=1000, metavar='V', help='number of VAE iteration')
 parser.add_argument('--mh-iter', type=int, default=150, metavar='M', help='number of M-H mgmm iteration')
 parser.add_argument('--category', type=int, default=10, metavar='K', help='number of category for GMM module')
 parser.add_argument('--mode', type=int, default=-1, metavar='M', help='0:All reject, 1:ALL accept')
@@ -156,7 +156,7 @@ for it in range(mutual_iteration):
     ############################## Initializing parameters ##############################
     # Set hyperparameters
     beta = 1.0; m_d_A = np.repeat(0.0, dim); m_d_B = np.repeat(0.0, dim) # Hyperparameters for \mu^A, \mu^B
-    w_dd_A = np.identity(dim) * 0.08; w_dd_B = np.identity(dim) * 0.08 # Hyperparameters for \Lambda^A, \Lambda^B
+    w_dd_A = np.identity(dim) * 0.05; w_dd_B = np.identity(dim) * 0.05 # Hyperparameters for \Lambda^A, \Lambda^B
     nu = dim
 
     # Initializing \mu, \Lambda
