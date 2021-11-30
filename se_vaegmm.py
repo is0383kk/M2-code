@@ -73,8 +73,8 @@ all_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=D, shuffle=
 
 # CIFAR10用
 print("Dataset : CIFAR10")
-angle_a = 25 # 回転角度
-angle_b = -25 # 回転角度
+angle_a = 0 # 回転角度
+angle_b = -45 # 回転角度
 trans_ang1 = transforms.Compose([transforms.RandomRotation(degrees=(angle_a, angle_a)), transforms.Resize((28, 28)), transforms.ToTensor()]) # -angle度回転設定
 trans_ang2 = transforms.Compose([transforms.RandomRotation(degrees=(angle_b, angle_b)), transforms.Resize((28, 28)), transforms.ToTensor()]) # angle度回転設定
 trainval_dataset1 = datasets.CIFAR10(root='./../data', train=True, download=False, transform=trans_ang1)
@@ -208,7 +208,7 @@ for it in range(mutual_iteration):
 
         for d in range(D): # 潜在変数をサンプル：式(4.93)
             w_dk_A[d] = np.random.multinomial(n=1, pvals=eta_dkA[d], size=1).flatten() # w^Aのサンプリング
-            #pred_label_A.append(np.argmax(w_dk_A[d]))
+            pred_label_A.append(np.argmax(w_dk_A[d]))
             
             if args.mode == 0:
                 judge_r = -1 # 全棄却用
@@ -231,7 +231,7 @@ for it in range(mutual_iteration):
                 count_AtoB = count_AtoB + 1 # 受容した回数をカウント
             else: 
                 w_dk[d] = w_dk_B[d]
-            pred_label_B.append(np.argmax(w_dk[d])) # 予測カテゴリ
+            #pred_label_B.append(np.argmax(w_dk[d])) # 予測カテゴリ
 
         # 更新後のw^Liを用いてエージェントBの\mu, \lambdaの再サンプリング
         for k in range(K):
@@ -267,7 +267,7 @@ for it in range(mutual_iteration):
         # 潜在変数をサンプル：式(4.93)
         for d in range(D):
             w_dk_B[d] = np.random.multinomial(n=1, pvals=eta_dkB[d], size=1).flatten() # w^Bのサンプリング
-            #pred_label_B.append(np.argmax(w_dk_B[d])) # 予測カテゴリ
+            pred_label_B.append(np.argmax(w_dk_B[d])) # 予測カテゴリ
             
             if args.mode == 0:
                 judge_r = -1 # 全棄却用
@@ -290,7 +290,7 @@ for it in range(mutual_iteration):
                 count_BtoA = count_BtoA + 1 # 受容した回数をカウント
             else: 
                 w_dk[d] = w_dk_A[d]
-            pred_label_A.append(np.argmax(w_dk[d])) # 予測カテゴリ
+            #pred_label_A.append(np.argmax(w_dk[d])) # 予測カテゴリ
         
         # 更新後のw^Liを用いてエージェントBの\mu, \lambdaの再サンプリング
         for k in range(K):
