@@ -15,8 +15,8 @@ from tool import visualize_gmm
 
 parser = argparse.ArgumentParser(description='Symbol emergence based on VAE+GMM Example')
 parser.add_argument('--batch-size', type=int, default=10, metavar='B', help='input batch size for training')
-parser.add_argument('--vae-iter', type=int, default=1000, metavar='V', help='number of VAE iteration')
-parser.add_argument('--mh-iter', type=int, default=150, metavar='M', help='number of M-H mgmm iteration')
+parser.add_argument('--vae-iter', type=int, default=500, metavar='V', help='number of VAE iteration')
+parser.add_argument('--mh-iter', type=int, default=100, metavar='M', help='number of M-H mgmm iteration')
 parser.add_argument('--category', type=int, default=10, metavar='K', help='number of category for GMM module')
 parser.add_argument('--mode', type=int, default=-1, metavar='M', help='0:All reject, 1:ALL accept')
 parser.add_argument('--debug', type=bool, default=False, metavar='D', help='Debug mode')
@@ -48,7 +48,7 @@ if not os.path.exists(log_dir):    os.mkdir(log_dir)
 if not os.path.exists(result_dir):    os.mkdir(result_dir)
 
 ############################## Prepareing Dataset #############################
-"""
+
 # MNIST左右回転設定
 print("Dataset : MNIST")
 angle_a = 0 # 回転角度
@@ -68,9 +68,9 @@ train_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=args.batc
 train_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=args.batch_size, shuffle=False) # train_loader for agent B
 all_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=D, shuffle=False) # データセット総数分のローダ
 all_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=D, shuffle=False) # データセット総数分のローダ
+
+
 """
-
-
 # CIFAR10用
 print("Dataset : CIFAR10")
 angle_a = 0 # 回転角度
@@ -91,7 +91,7 @@ train_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=args.batc
 train_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=args.batch_size, shuffle=False) # train_loader for agent B
 all_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=D, shuffle=False) # データセット総数分のローダ
 all_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=D, shuffle=False) # データセット総数分のローダ
-
+"""
 
 """
 # カスタムデータローダ
@@ -125,7 +125,7 @@ import vae_module
 import cnn_vae_module
 import cnn_vae_module2
 
-mutual_iteration = 5
+mutual_iteration = 1
 mu_d_A = np.zeros((D)); var_d_A = np.zeros((D)) 
 mu_d_B = np.zeros((D)); var_d_B = np.zeros((D))
 for it in range(mutual_iteration):
@@ -208,7 +208,7 @@ for it in range(mutual_iteration):
 
         for d in range(D): # 潜在変数をサンプル：式(4.93)
             w_dk_A[d] = np.random.multinomial(n=1, pvals=eta_dkA[d], size=1).flatten() # w^Aのサンプリング
-            pred_label_A.append(np.argmax(w_dk_A[d]))
+            #pred_label_A.append(np.argmax(w_dk_A[d]))
             
             if args.mode == 0:
                 judge_r = -1 # 全棄却用
@@ -231,7 +231,7 @@ for it in range(mutual_iteration):
                 count_AtoB = count_AtoB + 1 # 受容した回数をカウント
             else: 
                 w_dk[d] = w_dk_B[d]
-            #pred_label_B.append(np.argmax(w_dk[d])) # 予測カテゴリ
+            pred_label_B.append(np.argmax(w_dk[d])) # 予測カテゴリ
 
         # 更新後のw^Liを用いてエージェントBの\mu, \lambdaの再サンプリング
         for k in range(K):
@@ -267,7 +267,7 @@ for it in range(mutual_iteration):
         # 潜在変数をサンプル：式(4.93)
         for d in range(D):
             w_dk_B[d] = np.random.multinomial(n=1, pvals=eta_dkB[d], size=1).flatten() # w^Bのサンプリング
-            pred_label_B.append(np.argmax(w_dk_B[d])) # 予測カテゴリ
+            #pred_label_B.append(np.argmax(w_dk_B[d])) # 予測カテゴリ
             
             if args.mode == 0:
                 judge_r = -1 # 全棄却用
@@ -290,7 +290,7 @@ for it in range(mutual_iteration):
                 count_BtoA = count_BtoA + 1 # 受容した回数をカウント
             else: 
                 w_dk[d] = w_dk_A[d]
-            #pred_label_A.append(np.argmax(w_dk[d])) # 予測カテゴリ
+            pred_label_A.append(np.argmax(w_dk[d])) # 予測カテゴリ
         
         # 更新後のw^Liを用いてエージェントBの\mu, \lambdaの再サンプリング
         for k in range(K):
