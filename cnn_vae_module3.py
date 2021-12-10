@@ -13,101 +13,88 @@ x_dim = 12
 ngf = 64
 ndf = 64
 nc = 3
+
+class Flatten(nn.Module):
+    def forward(self, input):
+        #print("input.size(0)",input.size(0))
+        #print("input.view(input.size(0),-1)",input.view(input.size(0), -1).size())
+        return input.view(input.size(0), -1) # [10,1024]
+class UnFlatten(nn.Module):
+    def forward(self, input, size=1024):
+        return input.view(input.size(0), size, 1, 1)
+
 class VAE(nn.Module):
-    def __init__(self):
+    def __init__(self, image_channels=3, h_dim=1024, z_dim=20):
         super(VAE, self).__init__()
         self.encoder = nn.Sequential(
-            # input is (nc) x 28 x 28
-            nn.Conv2d(nc, ndf, 4, 2, 1, bias=False),
-            #nn.LeakyReLU(0.2, inplace=True),
-            nn.ReLU(True),
-
-            # state size. (ndf) x 14 x 14
-            nn.Conv2d(ndf, ndf * 2, 4, 2, 1, bias=False),
-            #nn.BatchNorm2d(ndf * 2),
-            #nn.LeakyReLU(0.2, inplace=True),
-            nn.ReLU(True),
-            
-            # state size. (ndf*2) x 7 x 7
-            nn.Conv2d(ndf * 2, ndf * 4, 3, 2, 1, bias=False),
-            #nn.BatchNorm2d(ndf * 4),
-            #nn.LeakyReLU(0.2, inplace=True),
-            nn.ReLU(True),
-
-            # state size. (ndf*4) x 4 x 4
-            nn.Conv2d(ndf * 4, 512, 4, 1, 0, bias=False),
-            #nn.BatchNorm2d(1024),
-            #nn.LeakyReLU(0.2, inplace=True),
-            nn.ReLU(True),
-            #nn.Sigmoid()
+            nn.Conv2d(in_channels=3, out_channels=32, kernel_size=4, stride=2),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=4, stride=2),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=128, out_channels=256, kernel_size=4, stride=2), # [10,256,2,2]
+            nn.ReLU(),
+            Flatten()
         )
 
+        self.fc1 = nn.Linear(h_dim, z_dim)
+        self.fc2 = nn.Linear(h_dim, z_dim)
+        self.fc3 = nn.Linear(z_dim, h_dim)
+        
         self.decoder = nn.Sequential(
-            # input is Z, going into a convolution
-            nn.ConvTranspose2d(     512, ngf * 8, 4, 1, 0, bias=False),
-            #nn.BatchNorm2d(ngf * 8),
-            nn.ReLU(True),
-            
-            # state size. (ngf*8) x 4 x 4
-            nn.ConvTranspose2d(ngf * 8, ngf * 4, 3, 2, 1, bias=False),
-            #nn.BatchNorm2d(ngf * 4),
-            nn.ReLU(True),
-            
-            # state size. (ngf*4) x 8 x 8
-            nn.ConvTranspose2d(ngf * 4, ngf * 2, 4, 2, 1, bias=False),
-            #nn.BatchNorm2d(ngf * 2),
-            nn.ReLU(True),
-
-            # state size. (ngf*2) x 16 x 16
-            nn.ConvTranspose2d(ngf * 2,     nc, 4, 2, 1, bias=False),
-            #nn.BatchNorm2d(ngf),
-            #nn.ReLU(True),
-            # nn.ReLU(True),
-            # state size. (ngf) x 32 x 32
-            #nn.ConvTranspose2d(    ngf,      nc, 4, 2, 1, bias=False),
-            # nn.Tanh()
-            nn.Sigmoid()
-            # state size. (nc) x 64 x 64
+            UnFlatten(),
+            #nn.ConvTranspose2d(in_channels=h_dim, out_channels=128, kernel_size=5, stride=2),
+            #nn.ReLU(),
+            nn.ConvTranspose2d(in_channels=h_dim, out_channels=256, kernel_size=2, stride=2),
+            nn.ReLU(),
+            nn.ConvTranspose2d(in_channels=256, out_channels=128, kernel_size=3, stride=2),
+            nn.ReLU(),
+            nn.ConvTranspose2d(in_channels=128, out_channels=64, kernel_size=5, stride=2),
+            nn.ReLU(),
+            nn.ConvTranspose2d(in_channels=64, out_channels=32, kernel_size=6, stride=2),
+            nn.ReLU(),
+            nn.ConvTranspose2d(in_channels=32, out_channels=image_channels, kernel_size=6, stride=2),
+            nn.Sigmoid(),
         )
-        #self.fc1 = nn.Linear(1024, 512)
-        self.fc21 = nn.Linear(512, x_dim)
-        self.fc22 = nn.Linear(512, x_dim)
-
-        self.fc3 = nn.Linear(x_dim, 512)
-        #self.fc4 = nn.Linear(512, 1024)
-
-        self.lrelu = nn.LeakyReLU()
-        self.relu = nn.ReLU()
+        self.fc1 = nn.Linear(h_dim, z_dim)
+        self.fc2 = nn.Linear(h_dim, z_dim)
+        self.fc3 = nn.Linear(z_dim, h_dim)
         # 事前分布のパラメータN(0,I)で初期化
         self.prior_var = nn.Parameter(torch.Tensor(1, x_dim).float().fill_(1.0))
         self.prior_logvar = nn.Parameter(self.prior_var.log())
         self.prior_var.requires_grad = False
         self.prior_logvar.requires_grad = False
 
-    def encode(self, x):
-        conv = self.encoder(x);
-        #h1 = self.fc1(conv.view(-1, 1024))
-        return self.fc21(conv.view(-1, 512)), self.fc22(conv.view(-1, 512))
-
-    def decode(self, x_d):
-        h3 = self.relu(self.fc3(x_d))
-        #deconv_input = self.fc4(h3)
-        deconv_input = h3.view(-1,512,1,1)
-        return self.decoder(deconv_input)
-
     def reparameterize(self, mu, logvar):
         std = torch.exp(0.5*logvar)
         eps = torch.randn_like(std)
         return mu + eps*std
+    
+    def encode(self, x):
+        #print("x: ",x.size()) # [batch_size, channel, 縦, 横]
+        h = self.encoder(x)
+        #print("h: ",h.size())
+        z, mu, logvar = self.bottleneck(h)
+        return z, mu, logvar
+
+    def decode(self, z):
+        z = self.fc3(z)
+        z = self.decoder(z)
+        return z
+
+    def bottleneck(self, h):
+        mu, logvar = self.fc1(h), self.fc2(h)
+        z = self.reparameterize(mu, logvar)
+        return z, mu, logvar
 
     def forward(self, x):
-        mu, logvar = self.encode(x)
-        x_d = self.reparameterize(mu, logvar)
-        return self.decode(x_d), mu, logvar, x_d
+        z, mu, logvar = self.encode(x)
+        return self.decode(z), mu, logvar, z
      
     # Reconstruction + KL divergence losses summed over all elements and batch
     def loss_function(self, recon_x, o_d, en_mu, en_logvar, gmm_mu, gmm_var, iteration):
-        BCE = F.binary_cross_entropy(recon_x.view(-1, 784), o_d.view(-1, 784), reduction='sum')
+        BCE = F.binary_cross_entropy(recon_x, o_d, reduction='sum')
         beta = 1.0
         # see Appendix B from VAE paper:
         # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
@@ -198,7 +185,7 @@ def decode(iteration, decode_k, sample_num, sample_d, manual, model_dir, agent):
     with torch.no_grad():
         sample_d = sample_d.to(device)
         sample_d = model.decode(sample_d).cpu()
-        save_image(sample_d.view(sample_num, nc, 28, 28),model_dir+'/recon'+agent+'/random_'+str(decode_k)+'.png') if manual != True else save_image(sample_d.view(sample_num, nc, 28, 28),model_dir+'/recon'+agent+'/manual_'+str(decode_k)+'.png')
+        save_image(sample_d.view(sample_num, 3, 64, 64),model_dir+'/recon'+agent+'/random_'+str(decode_k)+'.png') if manual != True else save_image(sample_d.view(sample_num, 3, 64, 64),model_dir+'/recon'+agent+'/manual_'+str(decode_k)+'.png')
         
     
 

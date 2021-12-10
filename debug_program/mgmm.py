@@ -6,9 +6,9 @@ from sklearn.metrics.cluster import adjusted_rand_score as ari
 
 K = 3 # サイン総数
 # データセット読み込み
-x_nd_1 = np.load("./dataset/data1d_1.npy")
-x_nd_2 = np.load("./dataset/data1d_2.npy")
-z_truth_n = np.load("./dataset/true_label1d.npy") 
+x_nd_1 = np.load("./dataset/data2d_1.npy")
+x_nd_2 = np.load("./dataset/data2d_2.npy")
+z_truth_n = np.load("./dataset/true_label2d.npy") 
 D = len(x_nd_1);dim = len(x_nd_1[0]) # データ総数
 
 ###### ここから事前分布のパラメータを設定 ######

@@ -3,7 +3,7 @@ from scipy.stats import multivariate_normal
 import matplotlib.pyplot as plt
 
 K = 3 # Number of clusters
-N = 300 # Number of data
+N = 30 # Number of data
 pi_synthetic_k = np.array([0.25, 0.25, 0.25]) # Mixing ratio for synthetic data
 
 
@@ -39,9 +39,9 @@ sigma2_synthetic_kdd_2 = np.array( # This is observation1
 )
 
 ############################## Make synthetic data ##############################
-label_0 = np.full(100, 0)
-label_1 = np.full(100, 1)
-label_2 = np.full(100, 2)
+label_0 = np.full(30, 0)
+label_1 = np.full(30, 1)
+label_2 = np.full(30, 2)
 z_synthetic_n = np.concatenate([label_0,label_1,label_2])
 #z_synthetic_nk = np.random.multinomial(n=1, pvals=pi_synthetic_k, size=N)
 #_, z_synthetic_n = np.where(z_synthetic_nk == 1)

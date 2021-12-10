@@ -14,6 +14,7 @@ import matplotlib.animation as animation
 
 
 root = "/home/is0383kk/workspace/mnist_png/mnist_png"
+root = "/home/is0383kk/workspace/fruits-360_dataset/fruits-360"
 #root = "../obj_data/train" # データセット読み込み先パス
 #前処理
 data_transforms = transforms.Compose([
@@ -43,10 +44,12 @@ trans = transforms.Compose([
 ])
 trans_ang1 = transforms.Compose([
     transforms.RandomRotation(degrees=(-25,-25)),
+    transforms.Resize((64, 64)),
     transforms.ToTensor(),
 ])
 trans_ang2 = transforms.Compose([
     transforms.RandomRotation(degrees=(25,25)),
+    transforms.Resize((64, 64)),
     transforms.ToTensor(),
 ])
 
@@ -71,6 +74,7 @@ custom_dataset = CustomDataset(root, trans_ang1, train=True)
 batch_size = 20
 custom_loader = torch.utils.data.DataLoader(dataset=custom_dataset, batch_size=batch_size, shuffle=True)
 #print("batch_size",batch_size)
+"""
 # データセット分割調整
 trainval_dataset = datasets.MNIST('./../../data', train=True, transform=pad1, download=False)
 n_samples = len(trainval_dataset) 
@@ -82,7 +86,8 @@ train_size = int(n_samples * 0.13) # 9000枚
 subset1_indices = list(range(0,train_size)); subset2_indices = list(range(train_size,n_samples)) 
 train_dataset = Subset(trainval_dataset, subset1_indices); val_dataset = Subset(trainval_dataset, subset2_indices)
 train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=32, shuffle=False)
-
+"""
+"""
 # CIFAR10用
 print("Dataset : CIFAR10")
 angle_a = 0 # 回転角度
@@ -103,14 +108,14 @@ train_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=16, shuff
 train_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=16, shuffle=False) # train_loader for agent B
 all_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=D, shuffle=False) # データセット総数分のローダ
 all_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=D, shuffle=False) # データセット総数分のローダ
-
+"""
 
 def show(img):
     npimg = img.numpy()
     plt.imshow(np.transpose(npimg, (1,2,0)), interpolation="nearest")
     plt.show()
 
-for i, (images, labels) in enumerate(train_loader2):
+for i, (images, labels) in enumerate(custom_loader):
     print(f"i :{i}")
     #print(f"images :{images}, {images.size()}")
     trans = ToNDarray()
@@ -123,7 +128,7 @@ for i, (images, labels) in enumerate(train_loader2):
     #imgs = transform(im)
     images = torchvision.utils.make_grid(images, padding=1)
     plt.imshow(np.transpose(images, (1,2,0)), interpolation="nearest")
-    plt.savefig('cifar45.png')
+    #plt.savefig('cifar45.png')
     
     plt.show()
     plt.close()

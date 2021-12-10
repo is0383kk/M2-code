@@ -30,7 +30,7 @@ def sample(iteration, z_dim, mu_gmm, lambda_gmm, sigma, sample_num, sample_k, mo
 
 def visualize_gmm(iteration, sigma, K, decode_k, sample_num, manual, model_dir, agent):
     mu_gmm_kd, lambda_gmm_kdd, pi_gmm_k = get_param(iteration=iteration, model_dir=model_dir, agent=agent)
-    sample_d, random_sample = sample(iteration=iteration, z_dim=12, 
+    sample_d, random_sample = sample(iteration=iteration, z_dim=32, 
                                      mu_gmm=mu_gmm_kd, lambda_gmm=lambda_gmm_kdd, sigma=sigma, 
                                      sample_k=decode_k, sample_num=sample_num, model_dir=model_dir
                                     )
@@ -79,10 +79,10 @@ def visualize_gmm(iteration, sigma, K, decode_k, sample_num, manual, model_dir, 
     plt.title('Number of sample='+str(len(sample_d))+', K='+str(decode_k))
     plt.xlabel('$x_1$'); plt.ylabel('$x_2$')
     plt.colorbar()
-    if manual != True:
-        plt.savefig(model_dir+'/recon'+agent+'/graph_dist/rgausek_'+str(decode_k)+'.png')
-    else:
-        plt.savefig(model_dir+'/recon'+agent+'/graph_dist/mgausek_'+str(decode_k)+'.png')
+    #if manual != True:
+    #    plt.savefig(model_dir+'/recon'+agent+'/graph_dist/rgausek_'+str(decode_k)+'.png')
+    #else:
+    #    plt.savefig(model_dir+'/recon'+agent+'/graph_dist/mgausek_'+str(decode_k)+'.png')
     plt.close()
 
     return sample_d
