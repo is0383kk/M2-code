@@ -30,7 +30,7 @@ def sample(iteration, z_dim, mu_gmm, lambda_gmm, sigma, sample_num, sample_k, mo
 
 def visualize_gmm(iteration, sigma, K, decode_k, sample_num, manual, model_dir, agent):
     mu_gmm_kd, lambda_gmm_kdd, pi_gmm_k = get_param(iteration=iteration, model_dir=model_dir, agent=agent)
-    sample_d, random_sample = sample(iteration=iteration, z_dim=32, 
+    sample_d, random_sample = sample(iteration=iteration, z_dim=20, 
                                      mu_gmm=mu_gmm_kd, lambda_gmm=lambda_gmm_kdd, sigma=sigma, 
                                      sample_k=decode_k, sample_num=sample_num, model_dir=model_dir
                                     )
@@ -96,7 +96,8 @@ def get_param(iteration, model_dir, agent):
     return mu_gmm_kd, lambda_gmm_kdd, pi_gmm_k
 
 def visualize_ls(iteration, z, labels, save_dir, agent):
-    colors = ["red", "green", "blue", "orange", "purple", "yellow", "black", "cyan", '#a65628', '#f781bf']
+    #colors = ["red", "green", "blue", "orange", "purple", "yellow", "black", "cyan", '#a65628', '#f781bf']
+    colors = ["red", "green", "blue", "orange", "purple", "yellow", "black", "cyan", '#a65628', '#f781bf','silver','rosybrown','tan','gold','indigo']
     points_pca = PCA(n_components=2, random_state=0).fit_transform(z)
     points_tsne = TSNE(n_components=2, random_state=0).fit_transform(z)
     

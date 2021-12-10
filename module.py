@@ -95,7 +95,7 @@ print("Dataset : CUSTOM")
 #root = "./obj25_per10/"
 root = "/home/is0383kk/workspace/fruits-360_dataset/fruits-360"
 angle_a = 0 # 回転角度
-angle_b = 25 # 回転角度
+angle_b = 0 # 回転角度
 #trans_ang1 = transforms.Compose([transforms.RandomRotation(degrees=(angle_a, angle_a)), transforms.ToTensor()]) # -angle度回転設定
 #trans_ang2 = transforms.Compose([transforms.RandomRotation(degrees=(angle_b, angle_b)), transforms.ToTensor()]) # angle度回転設定
 trans_ang1 = transforms.Compose([transforms.RandomRotation(degrees=(angle_a, angle_a)), transforms.Resize((64, 64)), transforms.ToTensor()]) # -angle度回転設定
@@ -124,7 +124,11 @@ def get_concat_h_multi_resize(dir_name, agent, resample=Image.BICUBIC):
     im4 = Image.open(dir_name+'/recon'+agent+'/manual_4.png');im5 = Image.open(dir_name+'/recon'+agent+'/manual_5.png')
     im6 = Image.open(dir_name+'/recon'+agent+'/manual_6.png');im7 = Image.open(dir_name+'/recon'+agent+'/manual_7.png')
     im8 = Image.open(dir_name+'/recon'+agent+'/manual_8.png');im9 = Image.open(dir_name+'/recon'+agent+'/manual_9.png')
-    im_list = [im0, im1, im2, im3, im4, im5, im6, im7, im8, im9]
+    im10 = Image.open(dir_name+'/recon'+agent+'/manual_10.png');im11 = Image.open(dir_name+'/recon'+agent+'/manual_11.png')
+    im12 = Image.open(dir_name+'/recon'+agent+'/manual_12.png');im13 = Image.open(dir_name+'/recon'+agent+'/manual_13.png')
+    im14 = Image.open(dir_name+'/recon'+agent+'/manual_14.png')
+    #im15 = Image.open(dir_name+'/recon'+agent+'/manual_15.png')
+    im_list = [im0, im1, im2, im3, im4, im5, im6, im7, im8, im9, im10, im11, im12, im13, im14]
     min_height = min(im.height for im in im_list)
     im_list_resize = [im.resize((int(im.width * min_height / im.height), min_height),resample=resample)
                       for im in im_list]
@@ -164,7 +168,7 @@ def decode_from_mgmm(load_iteration, sigma, K, decode_k, sample_num, manual, dir
 
 def main():
     load_iteration = 0
-    decode_from_mgmm(load_iteration=load_iteration, sigma=0, K=10, decode_k=None, sample_num=1, manual=True, dir_name=dir_name)
+    decode_from_mgmm(load_iteration=load_iteration, sigma=0, K=15, decode_k=None, sample_num=1, manual=True, dir_name=dir_name)
     #decode_from_mgmm(load_iteration=load_iteration, sigma=0, K=10, decode_k=None, sample_num=8, manual=False, dir_name=dir_name)
     #vae_module.plot_latent(iteration=0, all_loader=all_loader1, model_dir=dir_name, agent="A") # plot latent space of VAE on Agent A
     #vae_module.plot_latent(iteration=0, all_loader=all_loader2, model_dir=dir_name, agent="B") # plot latent space of VAE on Agent B
@@ -176,8 +180,8 @@ def main():
     #decode_from_mgmm(load_iteration=4, sigma=0, K=10, decode_k=None, sample_num=8, manual=False, dir_name=dir_name)
     cnn_vae_module3.plot_latent(iteration=0, all_loader=all_loader1, model_dir=dir_name, agent="A") # plot latent space of VAE on Agent A
     cnn_vae_module3.plot_latent(iteration=0, all_loader=all_loader2, model_dir=dir_name, agent="B") # plot latent space of VAE on Agent B
-    cnn_vae_module3.plot_latent(iteration=4, all_loader=all_loader1, model_dir=dir_name, agent="A") # plot latent space of VAE on Agent A
-    cnn_vae_module3.plot_latent(iteration=4, all_loader=all_loader2, model_dir=dir_name, agent="B") # plot latent space of VAE on Agent B
+    #cnn_vae_module3.plot_latent(iteration=4, all_loader=all_loader1, model_dir=dir_name, agent="A") # plot latent space of VAE on Agent A
+    #cnn_vae_module3.plot_latent(iteration=4, all_loader=all_loader2, model_dir=dir_name, agent="B") # plot latent space of VAE on Agent B
     get_concat_h_multi_resize(dir_name = dir_name, agent="A")
     get_concat_h_multi_resize(dir_name = dir_name, agent="B")
 

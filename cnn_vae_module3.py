@@ -9,11 +9,7 @@ from tool import visualize_ls, sample, get_param
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
-x_dim = 12
-ngf = 64
-ndf = 64
-nc = 3
-
+x_dim = 20
 class Flatten(nn.Module):
     def forward(self, input):
         #print("input.size(0)",input.size(0))
@@ -24,7 +20,7 @@ class UnFlatten(nn.Module):
         return input.view(input.size(0), size, 1, 1)
 
 class VAE(nn.Module):
-    def __init__(self, image_channels=3, h_dim=1024, z_dim=20):
+    def __init__(self, image_channels=3, h_dim=1024, x_dim=x_dim):
         super(VAE, self).__init__()
         self.encoder = nn.Sequential(
             nn.Conv2d(in_channels=3, out_channels=32, kernel_size=4, stride=2),
@@ -38,18 +34,18 @@ class VAE(nn.Module):
             Flatten()
         )
 
-        self.fc1 = nn.Linear(h_dim, z_dim)
-        self.fc2 = nn.Linear(h_dim, z_dim)
-        self.fc3 = nn.Linear(z_dim, h_dim)
+        self.fc1 = nn.Linear(h_dim, x_dim)
+        self.fc2 = nn.Linear(h_dim, x_dim)
+        self.fc3 = nn.Linear(x_dim, h_dim)
         
         self.decoder = nn.Sequential(
             UnFlatten(),
-            #nn.ConvTranspose2d(in_channels=h_dim, out_channels=128, kernel_size=5, stride=2),
+            nn.ConvTranspose2d(in_channels=h_dim, out_channels=128, kernel_size=5, stride=2),
+            nn.ReLU(),
+            #nn.ConvTranspose2d(in_channels=h_dim, out_channels=256, kernel_size=2, stride=2),
             #nn.ReLU(),
-            nn.ConvTranspose2d(in_channels=h_dim, out_channels=256, kernel_size=2, stride=2),
-            nn.ReLU(),
-            nn.ConvTranspose2d(in_channels=256, out_channels=128, kernel_size=3, stride=2),
-            nn.ReLU(),
+            #nn.ConvTranspose2d(in_channels=256, out_channels=128, kernel_size=3, stride=2),
+            #nn.ReLU(),
             nn.ConvTranspose2d(in_channels=128, out_channels=64, kernel_size=5, stride=2),
             nn.ReLU(),
             nn.ConvTranspose2d(in_channels=64, out_channels=32, kernel_size=6, stride=2),
@@ -57,9 +53,9 @@ class VAE(nn.Module):
             nn.ConvTranspose2d(in_channels=32, out_channels=image_channels, kernel_size=6, stride=2),
             nn.Sigmoid(),
         )
-        self.fc1 = nn.Linear(h_dim, z_dim)
-        self.fc2 = nn.Linear(h_dim, z_dim)
-        self.fc3 = nn.Linear(z_dim, h_dim)
+        self.fc1 = nn.Linear(h_dim, x_dim)
+        self.fc2 = nn.Linear(h_dim, x_dim)
+        self.fc3 = nn.Linear(x_dim, h_dim)
         # 事前分布のパラメータN(0,I)で初期化
         self.prior_var = nn.Parameter(torch.Tensor(1, x_dim).float().fill_(1.0))
         self.prior_logvar = nn.Parameter(self.prior_var.log())
@@ -71,9 +67,9 @@ class VAE(nn.Module):
         eps = torch.randn_like(std)
         return mu + eps*std
     
-    def encode(self, x):
-        #print("x: ",x.size()) # [batch_size, channel, 縦, 横]
-        h = self.encoder(x)
+    def encode(self, o_d):
+        #print("o_d: ",o_d.size()) # [batch_size, channel, 縦, 横]
+        h = self.encoder(o_d)
         #print("h: ",h.size())
         z, mu, logvar = self.bottleneck(h)
         return z, mu, logvar
@@ -88,13 +84,13 @@ class VAE(nn.Module):
         z = self.reparameterize(mu, logvar)
         return z, mu, logvar
 
-    def forward(self, x):
-        z, mu, logvar = self.encode(x)
+    def forward(self, o_d):
+        z, mu, logvar = self.encode(o_d)
         return self.decode(z), mu, logvar, z
      
     # Reconstruction + KL divergence losses summed over all elements and batch
-    def loss_function(self, recon_x, o_d, en_mu, en_logvar, gmm_mu, gmm_var, iteration):
-        BCE = F.binary_cross_entropy(recon_x, o_d, reduction='sum')
+    def loss_function(self, recon_o, o_d, en_mu, en_logvar, gmm_mu, gmm_var, iteration):
+        BCE = F.binary_cross_entropy(recon_o, o_d, reduction='sum')
         beta = 1.0
         # see Appendix B from VAE paper:
         # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
@@ -177,9 +173,9 @@ def train(iteration, gmm_mu, gmm_var, epoch, train_loader, batch_size, all_loade
 
 def decode(iteration, decode_k, sample_num, sample_d, manual, model_dir, agent):
     print(f"Reconstruct image on Agent: {agent}, category: {decode_k}")
-    model = VAE().to(device)
+    model = VAE().to()
     
-    model.load_state_dict(torch.load(str(model_dir)+"/pth/vae"+agent+"_"+str(iteration)+".pth")); model.eval()
+    model.load_state_dict(torch.load(str(model_dir)+"/pth/vae"+agent+"_"+str(iteration)+".pth",map_location=torch.device('cpu'))); model.eval()
     mu_gmm_kd, lambda_gmm_kdd, pi_gmm_k = get_param(iteration, model_dir=model_dir, agent=agent)
     sample_d = torch.from_numpy(sample_d.astype(np.float32)).clone()
     with torch.no_grad():

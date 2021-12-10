@@ -15,8 +15,8 @@ from tool import visualize_gmm
 
 parser = argparse.ArgumentParser(description='Symbol emergence based on VAE+GMM Example')
 parser.add_argument('--batch-size', type=int, default=10, metavar='B', help='input batch size for training')
-parser.add_argument('--vae-iter', type=int, default=150, metavar='V', help='number of VAE iteration')
-parser.add_argument('--mh-iter', type=int, default=70, metavar='M', help='number of M-H mgmm iteration')
+parser.add_argument('--vae-iter', type=int, default=75, metavar='V', help='number of VAE iteration')
+parser.add_argument('--mh-iter', type=int, default=50, metavar='M', help='number of M-H mgmm iteration')
 parser.add_argument('--category', type=int, default=15, metavar='K', help='number of category for GMM module')
 parser.add_argument('--mode', type=int, default=-1, metavar='M', help='0:All reject, 1:ALL accept')
 parser.add_argument('--debug', type=bool, default=False, metavar='D', help='Debug mode')
