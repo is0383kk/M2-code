@@ -173,13 +173,13 @@ def train(iteration, gmm_mu, gmm_var, epoch, train_loader, batch_size, all_loade
 
 def decode(iteration, decode_k, sample_num, sample_d, manual, model_dir, agent):
     print(f"Reconstruct image on Agent: {agent}, category: {decode_k}")
-    model = VAE().to()
+    model = VAE().to("cpu")
     
     model.load_state_dict(torch.load(str(model_dir)+"/pth/vae"+agent+"_"+str(iteration)+".pth",map_location=torch.device('cpu'))); model.eval()
     mu_gmm_kd, lambda_gmm_kdd, pi_gmm_k = get_param(iteration, model_dir=model_dir, agent=agent)
     sample_d = torch.from_numpy(sample_d.astype(np.float32)).clone()
     with torch.no_grad():
-        sample_d = sample_d.to(device)
+        sample_d = sample_d.to("cpu")
         sample_d = model.decode(sample_d).cpu()
         save_image(sample_d.view(sample_num, 3, 64, 64),model_dir+'/recon'+agent+'/random_'+str(decode_k)+'.png') if manual != True else save_image(sample_d.view(sample_num, 3, 64, 64),model_dir+'/recon'+agent+'/manual_'+str(decode_k)+'.png')
         
@@ -187,11 +187,11 @@ def decode(iteration, decode_k, sample_num, sample_d, manual, model_dir, agent):
 
 def plot_latent(iteration, all_loader, model_dir, agent): # VAEの潜在空間を可視化するメソッド
     print(f"Plot latent space on Agent: {agent}")
-    model = VAE().to(device)
-    model.load_state_dict(torch.load(model_dir+"/pth/vae"+agent+"_"+str(iteration)+".pth"))
+    model = VAE().to("cpu")
+    model.load_state_dict(torch.load(model_dir+"/pth/vae"+agent+"_"+str(iteration)+".pth", map_location=torch.device('cpu')))
     model.eval()
     for batch_idx, (data, label) in enumerate(all_loader):
-        data = data.to(device)
+        data = data.to("cpu")
         recon_batch, mu, logvar, x_d = model(data)
         x_d = x_d.cpu()
         visualize_ls(iteration, x_d.detach().numpy(), label, model_dir,agent=agent)
