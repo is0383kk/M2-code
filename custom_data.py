@@ -11,8 +11,9 @@ import matplotlib.pyplot as plt
 root = "../obj_data/train" # データセット読み込み先パス
 class CustomDataset(torch.utils.data.Dataset):
     def __init__(self, root, transform = None, train = True):
+        train_path = "train5"
         #path = "/home/is0383kk/workspace/mnist_png/training"
-        classes = os.listdir(root+"/train")
+        classes = os.listdir(root+"/"+str(train_path))
         print(f"classes : {classes}")
         self.transform = transform # 前処理クラス
         # 画像とラベルの一覧を保持するリスト
@@ -23,10 +24,10 @@ class CustomDataset(torch.utils.data.Dataset):
         # trainとval用で分ける
         if train == True:
             for i in range(len(classes)):
-                data_path.append(os.path.join(root, "train", classes[i]))
+                data_path.append(os.path.join(root, str(train_path), classes[i]))
         else:
             for i in range(len(classes)):
-                data_path.append(os.path.join(root, "train", classes[i]))
+                data_path.append(os.path.join(root, str(train_path), classes[i]))
         
         # 数字ごとの画像データ一覧を取得
         for i in range(len(classes)):
