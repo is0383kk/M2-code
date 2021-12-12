@@ -30,7 +30,7 @@ def sample(iteration, z_dim, mu_gmm, lambda_gmm, sigma, sample_num, sample_k, mo
 
 def visualize_gmm(iteration, sigma, K, decode_k, sample_num, manual, model_dir, agent):
     mu_gmm_kd, lambda_gmm_kdd, pi_gmm_k = get_param(iteration=iteration, model_dir=model_dir, agent=agent)
-    sample_d, random_sample = sample(iteration=iteration, z_dim=32, 
+    sample_d, random_sample = sample(iteration=iteration, z_dim=12, 
                                      mu_gmm=mu_gmm_kd, lambda_gmm=lambda_gmm_kdd, sigma=sigma, 
                                      sample_k=decode_k, sample_num=sample_num, model_dir=model_dir
                                     )

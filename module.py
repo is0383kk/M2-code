@@ -27,7 +27,7 @@ device = torch.device("cuda" if args.cuda else "cpu")
 
 ############################## Making directory ##############################
 
-file_name = "fruit10_com"; model_dir = "./model"; dir_name = "./model/"+file_name# debugフォルダに保存される
+file_name = "debug"; model_dir = "./model"; dir_name = "./model/"+file_name# debugフォルダに保存される
 graphA_dir = "./model/"+file_name+"/graphA"; graphB_dir = "./model/"+file_name+"/graphB" # 各種グラフの保存先
 pth_dir = "./model/"+file_name+"/pth";npy_dir = "./model/"+file_name+"/npy"
 reconA_dir = model_dir+"/"+file_name+"/reconA/graph_dist"; reconB_dir = model_dir+"/"+file_name+"/reconB/graph_dist"
@@ -154,7 +154,7 @@ def decode_from_mgmm(load_iteration, sigma, K, decode_k, sample_num, manual, dir
                                 model_dir=dir_name, agent="A")
         #vae_module.decode(iteration=load_iteration, decode_k=i, sample_num=sample_num, 
         #                  sample_d=sample_d, manual=manual, model_dir=dir_name, agent="A")
-        cnn_vae_module4.decode(iteration=load_iteration, decode_k=i, sample_num=sample_num, 
+        cnn_vae_module3.decode(iteration=load_iteration, decode_k=i, sample_num=sample_num, 
                           sample_d=sample_d, manual=manual, model_dir=dir_name, agent="A")
 
         sample_d = visualize_gmm(iteration=load_iteration, # load iteration model 
@@ -166,7 +166,7 @@ def decode_from_mgmm(load_iteration, sigma, K, decode_k, sample_num, manual, dir
                                 model_dir=dir_name, agent="B")
         #vae_module.decode(iteration=load_iteration, decode_k=i, sample_num=sample_num, 
         #                  sample_d=sample_d, manual=manual, model_dir=dir_name, agent="B")
-        cnn_vae_module4.decode(iteration=load_iteration, decode_k=i, sample_num=sample_num, 
+        cnn_vae_module3.decode(iteration=load_iteration, decode_k=i, sample_num=sample_num, 
                           sample_d=sample_d, manual=manual, model_dir=dir_name, agent="B")
 
 def main():
@@ -181,12 +181,12 @@ def main():
     #cnn_vae_module.plot_latent(iteration=load_iteration, all_loader=all_loader2, model_dir=dir_name, agent="B") # plot latent space of VAE on Agent B
     #decode_from_mgmm(load_iteration=0, sigma=0, K=10, decode_k=None, sample_num=1, manual=True, dir_name=dir_name)
     #decode_from_mgmm(load_iteration=4, sigma=0, K=10, decode_k=None, sample_num=8, manual=False, dir_name=dir_name)
-    cnn_vae_module4.plot_latent(iteration=0, all_loader=all_loader1, model_dir=dir_name, agent="A") # plot latent space of VAE on Agent A
-    cnn_vae_module4.plot_latent(iteration=0, all_loader=all_loader2, model_dir=dir_name, agent="B") # plot latent space of VAE on Agent B
+    #cnn_vae_module4.plot_latent(iteration=1, all_loader=all_loader1, model_dir=dir_name, agent="A") # plot latent space of VAE on Agent A
+    #cnn_vae_module4.plot_latent(iteration=1, all_loader=all_loader2, model_dir=dir_name, agent="B") # plot latent space of VAE on Agent B
     #cnn_vae_module3.plot_latent(iteration=4, all_loader=all_loader1, model_dir=dir_name, agent="A") # plot latent space of VAE on Agent A
     #cnn_vae_module3.plot_latent(iteration=4, all_loader=all_loader2, model_dir=dir_name, agent="B") # plot latent space of VAE on Agent B
-    get_concat_h_multi_resize(dir_name = dir_name, agent="A")
-    get_concat_h_multi_resize(dir_name = dir_name, agent="B")
+    #get_concat_h_multi_resize(dir_name = dir_name, agent="A")
+    #get_concat_h_multi_resize(dir_name = dir_name, agent="B")
 
 if __name__=="__main__":
     main()

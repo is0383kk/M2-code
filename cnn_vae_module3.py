@@ -9,27 +9,31 @@ from tool import visualize_ls, sample, get_param
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
-x_dim = 20
+x_dim = 12
+h_dim = 1152
+image_channels=3
+image_size = 63
 class Flatten(nn.Module):
     def forward(self, input):
         #print("input.size(0)",input.size(0))
         #print("input.view(input.size(0),-1)",input.view(input.size(0), -1).size())
         return input.view(input.size(0), -1) # [10,1024]
 class UnFlatten(nn.Module):
-    def forward(self, input, size=1024):
+    def forward(self, input, size=h_dim):
+        #print("input.view(input.size(0),size,1,1)",input.view(input.size(0), size,1,1).size())
         return input.view(input.size(0), size, 1, 1)
 
 class VAE(nn.Module):
-    def __init__(self, image_channels=3, h_dim=1024, x_dim=x_dim):
+    def __init__(self, image_channels=image_channels, h_dim=h_dim, x_dim=x_dim):
         super(VAE, self).__init__()
         self.encoder = nn.Sequential(
-            nn.Conv2d(in_channels=3, out_channels=32, kernel_size=4, stride=2),
+            nn.Conv2d(in_channels=image_channels, out_channels=16, kernel_size=3, stride=2),
             nn.ReLU(),
-            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2),
+            nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride=2),
             nn.ReLU(),
-            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=4, stride=2),
+            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=2),
             nn.ReLU(),
-            nn.Conv2d(in_channels=128, out_channels=256, kernel_size=4, stride=2), # [10,256,2,2]
+            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=2),
             nn.ReLU(),
             Flatten()
         )
@@ -40,17 +44,19 @@ class VAE(nn.Module):
         
         self.decoder = nn.Sequential(
             UnFlatten(),
-            nn.ConvTranspose2d(in_channels=h_dim, out_channels=128, kernel_size=5, stride=2),
+            nn.ConvTranspose2d(in_channels=h_dim, out_channels=128, kernel_size=3, stride=2),
             nn.ReLU(),
-            #nn.ConvTranspose2d(in_channels=h_dim, out_channels=256, kernel_size=2, stride=2),
-            #nn.ReLU(),
-            #nn.ConvTranspose2d(in_channels=256, out_channels=128, kernel_size=3, stride=2),
-            #nn.ReLU(),
-            nn.ConvTranspose2d(in_channels=128, out_channels=64, kernel_size=5, stride=2),
+            nn.ConvTranspose2d(in_channels=128, out_channels=128, kernel_size=3, stride=1),
             nn.ReLU(),
-            nn.ConvTranspose2d(in_channels=64, out_channels=32, kernel_size=6, stride=2),
+            nn.ConvTranspose2d(in_channels=128, out_channels=64, kernel_size=3, stride=2),
             nn.ReLU(),
-            nn.ConvTranspose2d(in_channels=32, out_channels=image_channels, kernel_size=6, stride=2),
+            nn.ConvTranspose2d(in_channels=64, out_channels=64, kernel_size=3, stride=1),            
+            nn.ReLU(),
+            nn.ConvTranspose2d(in_channels=64, out_channels=32, kernel_size=3, stride=2),            
+            nn.ReLU(),
+            nn.ConvTranspose2d(in_channels=32, out_channels=16, kernel_size=5, stride=1),
+            nn.ReLU(),
+            nn.ConvTranspose2d(in_channels=16, out_channels=image_channels, kernel_size=5, stride=2),
             nn.Sigmoid(),
         )
         self.fc1 = nn.Linear(h_dim, x_dim)
@@ -90,6 +96,8 @@ class VAE(nn.Module):
      
     # Reconstruction + KL divergence losses summed over all elements and batch
     def loss_function(self, recon_o, o_d, en_mu, en_logvar, gmm_mu, gmm_var, iteration):
+        #print(f"o_d : {o_d.size()}  recon_o:{recon_o.size()}")
+        #print(f"recon_o:{recon_o.view(o_d.size()).size()}")
         BCE = F.binary_cross_entropy(recon_o, o_d, reduction='sum')
         beta = 1.0
         # see Appendix B from VAE paper:
@@ -181,16 +189,19 @@ def decode(iteration, decode_k, sample_num, sample_d, manual, model_dir, agent):
     with torch.no_grad():
         sample_d = sample_d.to("cpu")
         sample_d = model.decode(sample_d).cpu()
-        save_image(sample_d.view(sample_num, 3, 64, 64),model_dir+'/recon'+agent+'/random_'+str(decode_k)+'.png') if manual != True else save_image(sample_d.view(sample_num, 3, 64, 64),model_dir+'/recon'+agent+'/manual_'+str(decode_k)+'.png')
+        save_image(sample_d.view(sample_num, image_channels, image_size, image_size),model_dir+'/recon'+agent+'/random_'+str(decode_k)+'.png') if manual != True else save_image(sample_d.view(sample_num, image_channels, image_size, image_size),model_dir+'/recon'+agent+'/manual_'+str(decode_k)+'.png')
         
     
 
 def plot_latent(iteration, all_loader, model_dir, agent): # VAEの潜在空間を可視化するメソッド
     print(f"Plot latent space on Agent: {agent}")
+    #model = VAE().to(device)
     model = VAE().to("cpu")
     model.load_state_dict(torch.load(model_dir+"/pth/vae"+agent+"_"+str(iteration)+".pth", map_location=torch.device('cpu')))
+    #model.load_state_dict(torch.load(model_dir+"/pth/vae"+agent+"_"+str(iteration)+".pth"))
     model.eval()
     for batch_idx, (data, label) in enumerate(all_loader):
+        #data = data.to(device)
         data = data.to("cpu")
         recon_batch, mu, logvar, x_d = model(data)
         x_d = x_d.cpu()
@@ -217,10 +228,14 @@ def test(epoch):
                          'image/recon_' + str(epoch) + '.png', nrow=n)
 
 def send_all_z(iteration, all_loader, model_dir, agent): # gmmにvaeの潜在空間を送るメソッド
+    #model = VAE().to("cpu")
     model = VAE().to(device)
-    model.load_state_dict(torch.load(model_dir+"/pth/vae"+agent+"_"+str(iteration)+".pth")); model.eval()
+    model.load_state_dict(torch.load(model_dir+"/pth/vae"+agent+"_"+str(iteration)+".pth"))
+    #model.load_state_dict(torch.load(model_dir+"/pth/vae"+agent+"_"+str(iteration)+".pth",map_location=torch.device('cpu')))
+    model.eval()
     for batch_idx, (data, label) in enumerate(all_loader):
         data = data.to(device)
+        #data = data.to("cpu")
         recon_batch, mu, logvar, x_d = model(data)
         x_d = x_d.cpu()
         label = label.cpu()
