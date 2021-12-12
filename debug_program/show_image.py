@@ -68,7 +68,7 @@ class ToNDarray(object):
         return x
 
 # データのプロット
-custom_dataset = CustomDataset(root, trans_ang1, train=True)
+custom_dataset = CustomDataset(root, pad1, train=True)
 #custom_dataset = CustomDataset(root, data_transforms, train=True)
 #print(f"データセット数 :{len(custom_dataset)}")
 batch_size = 20
