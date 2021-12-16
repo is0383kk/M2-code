@@ -95,8 +95,8 @@ print("Dataset : CUSTOM")
 #root = "./obj25_per10/"
 root = "/home/is0383kk/workspace/fruits-360_dataset/fruits-360"
 angle_a = 0 # 回転角度
-angle_b = 0 # 回転角度
-image_size = 64
+angle_b = 25 # 回転角度
+image_size = 83
 #trans_ang1 = transforms.Compose([transforms.RandomRotation(degrees=(angle_a, angle_a)), transforms.ToTensor()]) # -angle度回転設定
 #trans_ang2 = transforms.Compose([transforms.RandomRotation(degrees=(angle_b, angle_b)), transforms.ToTensor()]) # angle度回転設定
 trans_ang1 = transforms.Compose([transforms.RandomRotation(degrees=(angle_a, angle_a)), transforms.Resize((image_size, image_size)), transforms.ToTensor()]) # -angle度回転設定
@@ -170,7 +170,7 @@ def decode_from_mgmm(load_iteration, sigma, K, decode_k, sample_num, manual, dir
                           sample_d=sample_d, manual=manual, model_dir=dir_name, agent="B")
 
 def main():
-    load_iteration = 0
+    load_iteration = 1
     decode_from_mgmm(load_iteration=load_iteration, sigma=0, K=10, decode_k=None, sample_num=1, manual=True, dir_name=dir_name)
     #decode_from_mgmm(load_iteration=load_iteration, sigma=0, K=10, decode_k=None, sample_num=8, manual=False, dir_name=dir_name)
     #vae_module.plot_latent(iteration=0, all_loader=all_loader1, model_dir=dir_name, agent="A") # plot latent space of VAE on Agent A
@@ -181,12 +181,12 @@ def main():
     #cnn_vae_module.plot_latent(iteration=load_iteration, all_loader=all_loader2, model_dir=dir_name, agent="B") # plot latent space of VAE on Agent B
     #decode_from_mgmm(load_iteration=0, sigma=0, K=10, decode_k=None, sample_num=1, manual=True, dir_name=dir_name)
     #decode_from_mgmm(load_iteration=4, sigma=0, K=10, decode_k=None, sample_num=8, manual=False, dir_name=dir_name)
-    #cnn_vae_module4.plot_latent(iteration=1, all_loader=all_loader1, model_dir=dir_name, agent="A") # plot latent space of VAE on Agent A
-    #cnn_vae_module4.plot_latent(iteration=1, all_loader=all_loader2, model_dir=dir_name, agent="B") # plot latent space of VAE on Agent B
+    cnn_vae_module3.plot_latent(iteration=load_iteration, all_loader=all_loader1, model_dir=dir_name, agent="A") # plot latent space of VAE on Agent A
+    cnn_vae_module3.plot_latent(iteration=load_iteration, all_loader=all_loader2, model_dir=dir_name, agent="B") # plot latent space of VAE on Agent B
     #cnn_vae_module3.plot_latent(iteration=4, all_loader=all_loader1, model_dir=dir_name, agent="A") # plot latent space of VAE on Agent A
     #cnn_vae_module3.plot_latent(iteration=4, all_loader=all_loader2, model_dir=dir_name, agent="B") # plot latent space of VAE on Agent B
-    #get_concat_h_multi_resize(dir_name = dir_name, agent="A")
-    #get_concat_h_multi_resize(dir_name = dir_name, agent="B")
+    get_concat_h_multi_resize(dir_name = dir_name, agent="A")
+    get_concat_h_multi_resize(dir_name = dir_name, agent="B")
 
 if __name__=="__main__":
     main()
