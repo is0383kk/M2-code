@@ -15,8 +15,8 @@ from tool import visualize_gmm
 
 parser = argparse.ArgumentParser(description='Symbol emergence based on VAE+GMM Example')
 parser.add_argument('--batch-size', type=int, default=10, metavar='B', help='input batch size for training')
-parser.add_argument('--vae-iter', type=int, default=50, metavar='V', help='number of VAE iteration')
-parser.add_argument('--mh-iter', type=int, default=50, metavar='M', help='number of M-H mgmm iteration')
+parser.add_argument('--vae-iter', type=int, default=100, metavar='V', help='number of VAE iteration')
+parser.add_argument('--mh-iter', type=int, default=100, metavar='M', help='number of M-H mgmm iteration')
 parser.add_argument('--category', type=int, default=10, metavar='K', help='number of category for GMM module')
 parser.add_argument('--mode', type=int, default=-1, metavar='M', help='0:All reject, 1:ALL accept')
 parser.add_argument('--debug', type=bool, default=False, metavar='D', help='Debug mode')
@@ -49,11 +49,11 @@ if not os.path.exists(result_dir):    os.mkdir(result_dir)
 
 ############################## Prepareing Dataset #############################
 
-"""
+
 # MNIST左右回転設定
 print("Dataset : MNIST")
 angle_a = 0 # 回転角度
-angle_b = 75 # 回転角度
+angle_b = 45 # 回転角度
 trans_ang1 = transforms.Compose([transforms.RandomRotation(degrees=(angle_a, angle_a)), transforms.ToTensor()]) # -angle度回転設定
 trans_ang2 = transforms.Compose([transforms.RandomRotation(degrees=(angle_b, angle_b)), transforms.ToTensor()]) # angle度回転設定
 # データセット定義
@@ -69,7 +69,7 @@ train_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=args.batc
 train_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=args.batch_size, shuffle=False) # train_loader for agent B
 all_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=D, shuffle=False) # データセット総数分のローダ
 all_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=D, shuffle=False) # データセット総数分のローダ
-"""
+
 
 """
 # CIFAR10用
@@ -96,7 +96,7 @@ all_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=D, shuffle=
 all_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=D, shuffle=False) # データセット総数分のローダ
 """
 
-
+"""
 # カスタムデータローダ
 from custom_data import CustomDataset
 print("Dataset : CUSTOM")
@@ -104,13 +104,14 @@ print("Dataset : CUSTOM")
 #root = "./obj25_per10/"
 #root = "./obj25_per10/"
 root = "/home/is0383kk/workspace/fruits-360_dataset/fruits-360"
+#oot = "/home/is0383kk/workspace/dataset_test"
 angle_a = 0 # 回転角度
-angle_b = 0 # 回転角度
-image_size = 65
+angle_b = 25 # 回転角度
+image_size = 83
 #trans_ang1 = transforms.Compose([transforms.RandomRotation(degrees=(angle_a, angle_a)), transforms.ToTensor()]) # -angle度回転設定
 #trans_ang2 = transforms.Compose([transforms.RandomRotation(degrees=(angle_b, angle_b)), transforms.ToTensor()]) # angle度回転設定
 trans_ang1 = transforms.Compose([transforms.RandomRotation(degrees=(angle_a, angle_a)), transforms.Resize((image_size, image_size)), transforms.ToTensor()]) # -angle度回転設定
-trans_ang2 = transforms.Compose([transforms.RandomRotation(degrees=(angle_b, angle_b)), transforms.Resize((image_size, image_size)), transforms.ToTensor()]) # angle度回転設定
+trans_ang2 = transforms.Compose([transforms.RandomRotation(degrees=(angle_b, angle_b),fill=256), transforms.Resize((image_size, image_size)), transforms.ToTensor()]) # angle度回転設定
 obj_a_dataset = CustomDataset(root, train=True, transform=trans_ang1)
 obj_b_dataset = CustomDataset(root, train=True, transform=trans_ang2)
 n_samples = len(obj_a_dataset)
@@ -124,16 +125,14 @@ train_loader1 = torch.utils.data.DataLoader(dataset=train_dataset1, batch_size=a
 train_loader2 = torch.utils.data.DataLoader(dataset=train_dataset2, batch_size=args.batch_size, shuffle=False)
 all_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=D, shuffle=False) # データセット総数分のローダ
 all_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=D, shuffle=False) # データセット総数分のローダ
-
+"""
 
 print(f"D={D}, Category:{args.category}")
 print(f"VAE_iter:{args.vae_iter}, Batch_size:{args.batch_size}")
 print(f"MH_iter:{args.mh_iter}, MH_mode:{args.mode}") 
 import vae_module
-import cnn_vae_module
-import cnn_vae_module2
-import cnn_vae_module3
-import cnn_vae_module4
+import cnn_vae_module_mnist
+import cnn_vae_module_fruit
 
 mutual_iteration = 4
 mu_d_A = np.zeros((D)); var_d_A = np.zeros((D)) 
@@ -141,7 +140,7 @@ mu_d_B = np.zeros((D)); var_d_B = np.zeros((D))
 for it in range(mutual_iteration):
     print(f"------------------Mutual learning session {it} begins------------------")
     ############################## Training VAE ##############################
-    c_nd_A, label, loss_list = cnn_vae_module3.train(
+    c_nd_A, label, loss_list = cnn_vae_module_mnist.train(
         iteration=it, # Current iteration
         gmm_mu=torch.from_numpy(mu_d_A), gmm_var=torch.from_numpy(var_d_A), # mu and var estimated by Multimodal-GMM
         epoch=args.vae_iter, 
@@ -149,7 +148,7 @@ for it in range(mutual_iteration):
         model_dir=dir_name, agent="A"
     )
     # VAE module on Agent B
-    c_nd_B, label, loss_list = cnn_vae_module3.train(
+    c_nd_B, label, loss_list = cnn_vae_module_mnist.train(
         iteration=it, # Current iteration
         gmm_mu=torch.from_numpy(mu_d_B), gmm_var=torch.from_numpy(var_d_B), # mu and var estimated by Multimodal-GMM
         epoch=args.vae_iter, 
