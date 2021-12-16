@@ -10,14 +10,9 @@ from tool import visualize_ls, sample, get_param
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 x_dim = 12
-"""Fruit360
 h_dim = 1152
 image_channels=3
 image_size = 83
-"""
-h_dim = 1152
-image_channels=1
-image_size = 28
 
 class Flatten(nn.Module):
     def forward(self, input):
@@ -93,7 +88,7 @@ class VAE(nn.Module):
         return z
 
     def bottleneck(self, h):
-        mu, logvar = self.fc1(h), self.softplus(self.fc2(h))
+        mu, logvar = self.fc1(h), self.fc2(h)
         z = self.reparameterize(mu, logvar)
         return z, mu, logvar
 
