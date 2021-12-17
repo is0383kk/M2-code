@@ -16,7 +16,7 @@ from tool import visualize_gmm
 parser = argparse.ArgumentParser(description='Symbol emergence based on VAE+GMM Example')
 parser.add_argument('--batch-size', type=int, default=10, metavar='B', help='input batch size for training')
 parser.add_argument('--vae-iter', type=int, default=100, metavar='V', help='number of VAE iteration')
-parser.add_argument('--mh-iter', type=int, default=100, metavar='M', help='number of M-H mgmm iteration')
+parser.add_argument('--mh-iter', type=int, default=75, metavar='M', help='number of M-H mgmm iteration')
 parser.add_argument('--category', type=int, default=10, metavar='K', help='number of category for GMM module')
 parser.add_argument('--mode', type=int, default=-1, metavar='M', help='0:All reject, 1:ALL accept')
 parser.add_argument('--debug', type=bool, default=False, metavar='D', help='Debug mode')
@@ -108,7 +108,8 @@ root = "/home/is0383kk/workspace/fruits-360_dataset/fruits-360"
 #oot = "/home/is0383kk/workspace/dataset_test"
 angle_a = 0 # 回転角度
 angle_b = 25 # 回転角度
-image_size = 83
+#image_size = 77
+image_size = 64
 #trans_ang1 = transforms.Compose([transforms.RandomRotation(degrees=(angle_a, angle_a)), transforms.ToTensor()]) # -angle度回転設定
 #trans_ang2 = transforms.Compose([transforms.RandomRotation(degrees=(angle_b, angle_b)), transforms.ToTensor()]) # angle度回転設定
 trans_ang1 = transforms.Compose([transforms.RandomRotation(degrees=(angle_a, angle_a)), transforms.Resize((image_size, image_size)), transforms.ToTensor()]) # -angle度回転設定
@@ -131,7 +132,7 @@ all_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=D, shuffle=
 print(f"D={D}, Category:{args.category}")
 print(f"VAE_iter:{args.vae_iter}, Batch_size:{args.batch_size}")
 print(f"MH_iter:{args.mh_iter}, MH_mode:{args.mode}") 
-import vae_module
+import vae_module, cnn_vae_module
 import cnn_vae_module_mnist
 import cnn_vae_module_fruit
 
@@ -141,7 +142,7 @@ mu_d_B = np.zeros((D)); var_d_B = np.zeros((D))
 for it in range(mutual_iteration):
     print(f"------------------Mutual learning session {it} begins------------------")
     ############################## Training VAE ##############################
-    c_nd_A, label, loss_list = cnn_vae_module_fruit.train(
+    c_nd_A, label, loss_list = cnn_vae_module.train(
         iteration=it, # Current iteration
         gmm_mu=torch.from_numpy(mu_d_A), gmm_var=torch.from_numpy(var_d_A), # mu and var estimated by Multimodal-GMM
         epoch=args.vae_iter, 
@@ -149,7 +150,7 @@ for it in range(mutual_iteration):
         model_dir=dir_name, agent="A"
     )
     # VAE module on Agent B
-    c_nd_B, label, loss_list = cnn_vae_module_fruit.train(
+    c_nd_B, label, loss_list = cnn_vae_module.train(
         iteration=it, # Current iteration
         gmm_mu=torch.from_numpy(mu_d_B), gmm_var=torch.from_numpy(var_d_B), # mu and var estimated by Multimodal-GMM
         epoch=args.vae_iter, 

@@ -10,9 +10,9 @@ from tool import visualize_ls, sample, get_param
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 x_dim = 12
-h_dim = 1152
+h_dim = 512
 image_channels=3
-image_size = 83
+image_size = 77
 
 class Flatten(nn.Module):
     def forward(self, input):
@@ -53,9 +53,9 @@ class VAE(nn.Module):
             nn.ReLU(),
             nn.ConvTranspose2d(in_channels=32, out_channels=16, kernel_size=5, stride=2),            
             nn.ReLU(),
-            nn.ConvTranspose2d(in_channels=16, out_channels=8, kernel_size=6, stride=2),
-            nn.ReLU(),
-            nn.ConvTranspose2d(in_channels=8, out_channels=image_channels, kernel_size=6, stride=1),            
+            nn.ConvTranspose2d(in_channels=16, out_channels=image_channels, kernel_size=5, stride=2),
+            #nn.ReLU(),
+            #nn.ConvTranspose2d(in_channels=8, out_channels=image_channels, kernel_size=6, stride=1),            
             #nn.ReLU(),
             #nn.ConvTranspose2d(in_channels=16, out_channels=image_channels, kernel_size=3, stride=2),
             nn.Sigmoid(),

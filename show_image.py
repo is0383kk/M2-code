@@ -12,10 +12,10 @@ from torchvision.utils import save_image
 from torch.utils.data.dataset import Subset
 import matplotlib.animation as animation
 
-
+torch.manual_seed(1)
 root = "/home/is0383kk/workspace/mnist_png/mnist_png"
 root = "/home/is0383kk/workspace/fruits-360_dataset/fruits-360"
-root = "/home/is0383kk/workspace/dataset_test"
+#root = "/home/is0383kk/workspace/dataset_test"
 #root = "../obj_data/train" # データセット読み込み先パス
 #前処理
 data_transforms = transforms.Compose([
@@ -45,13 +45,12 @@ trans = transforms.Compose([
 ])
 trans_ang1 = transforms.Compose([
     #transforms.Resize((120, 120)),
-    transforms.Resize((77, 77)),
     transforms.RandomRotation(degrees=(0,0),fill=256),
-    
+    transforms.Resize((77, 77)),
     transforms.ToTensor(),
 ])
 trans_ang2 = transforms.Compose([
-    transforms.RandomRotation(degrees=(25,25)),
+    transforms.RandomRotation(degrees=(25,25),fill=256),
     transforms.Resize((64, 64)),
     transforms.ToTensor(),
 ])
@@ -71,11 +70,18 @@ class ToNDarray(object):
         return x
 
 # データのプロット
-custom_dataset = CustomDataset(root, trans_ang1, train=True)
+custom_dataset1 = CustomDataset(root, trans_ang1, train=True)
 #custom_dataset = CustomDataset(root, data_transforms, train=True)
 #print(f"データセット数 :{len(custom_dataset)}")
 batch_size = 10
-custom_loader = torch.utils.data.DataLoader(dataset=custom_dataset, batch_size=batch_size, shuffle=False)
+custom_loader1 = torch.utils.data.DataLoader(dataset=custom_dataset1, batch_size=batch_size, shuffle=True,num_workers=4,)
+
+# データのプロット
+custom_dataset2 = CustomDataset(root, trans_ang2, train=True)
+#custom_dataset = CustomDataset(root, data_transforms, train=True)
+#print(f"データセット数 :{len(custom_dataset)}")
+batch_size = 10
+custom_loader2 = torch.utils.data.DataLoader(dataset=custom_dataset2, batch_size=batch_size, shuffle=True, num_workers=4,)
 #print("batch_size",batch_size)
 """
 # データセット分割調整
@@ -118,7 +124,7 @@ def show(img):
     plt.imshow(np.transpose(npimg, (1,1,0)), interpolation="nearest")
     plt.show()
 
-for i, (images, labels) in enumerate(custom_loader):
+for i, (images, labels) in enumerate(custom_loader1):
     print(f"i :{i}")
     #print(f"images :{images}, {images.size()}")
     trans = ToNDarray()
@@ -131,7 +137,7 @@ for i, (images, labels) in enumerate(custom_loader):
     #imgs = transform(im)
     images = torchvision.utils.make_grid(images, padding=1)
     plt.imshow(np.transpose(images, (1,2,0)), interpolation="nearest")
-    plt.savefig('fruit10.png')
+    #plt.savefig('fruit10.png')
     
     plt.show()
     plt.close()
@@ -139,4 +145,27 @@ for i, (images, labels) in enumerate(custom_loader):
     #plt.axis("off")
 
     break
+
+for i, (images, labels) in enumerate(custom_loader2):
+    print(f"i :{i}")
+    #print(f"images :{images}, {images.size()}")
+    trans = ToNDarray()
+    print(f"labels :{labels}")
+    #print(images)
+    #print(labels.numpy())
+    #im = trans(images[0])
+    #print(f"im: {im}")
+    #transform = transforms.FiveCrop(24)
+    #imgs = transform(im)
+    images = torchvision.utils.make_grid(images, padding=1)
+    plt.imshow(np.transpose(images, (1,2,0)), interpolation="nearest")
+    #plt.savefig('fruit10.png')
+    
+    plt.show()
+    plt.close()
+    #show(torchvision.utils.make_grid(images, padding=1))
+    #plt.axis("off")
+
+    break
+
 
