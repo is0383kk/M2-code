@@ -12,6 +12,7 @@ root = "../obj_data/train" # データセット読み込み先パス
 class CustomDataset(torch.utils.data.Dataset):
     def __init__(self, root, transform = None, train = True):
         train_path = "train10_test"
+        #train_path = "plot_data"
         #path = "/home/is0383kk/workspace/mnist_png/training"
         classes = os.listdir(root+"/"+str(train_path))
         print(f"classes : {classes}")

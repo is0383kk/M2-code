@@ -108,7 +108,7 @@ def visualize_ls(iteration, z, labels, save_dir, agent):
         plt.title("TSNE", fontsize=24)
         plt.tick_params(labelsize=17)
         plt.scatter(p[0], p[1], marker="${}$".format(l),c=colors[l],s=100)
-    plt.savefig(save_dir+'/graph'+agent+'/tsne_'+str(iteration)+'.png')
+    plt.savefig(save_dir+'/graph'+agent+'/tsne_'+agent+str(iteration)+'.png')
     plt.close()
 
     # PCA
@@ -117,7 +117,7 @@ def visualize_ls(iteration, z, labels, save_dir, agent):
         plt.title("PCA", fontsize=24)
         plt.tick_params(labelsize=17)
         plt.scatter(p[0], p[1], marker="${}$".format(l),c=colors[l],s=100)
-    plt.savefig(save_dir+'/graph'+agent+'/pca_'+str(iteration)+'.png')
+    plt.savefig(save_dir+'/graph'+agent+'/pca_'+agent+str(iteration)+'.png')
     plt.close()
 
 def cmx(iteration, y_true, y_pred, agent, save_dir):

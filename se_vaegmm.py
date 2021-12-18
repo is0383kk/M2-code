@@ -15,13 +15,13 @@ from tool import visualize_gmm
 
 parser = argparse.ArgumentParser(description='Symbol emergence based on VAE+GMM Example')
 parser.add_argument('--batch-size', type=int, default=10, metavar='B', help='input batch size for training')
-parser.add_argument('--vae-iter', type=int, default=100, metavar='V', help='number of VAE iteration')
+parser.add_argument('--vae-iter', type=int, default=75, metavar='V', help='number of VAE iteration')
 parser.add_argument('--mh-iter', type=int, default=75, metavar='M', help='number of M-H mgmm iteration')
 parser.add_argument('--category', type=int, default=10, metavar='K', help='number of category for GMM module')
 parser.add_argument('--mode', type=int, default=-1, metavar='M', help='0:All reject, 1:ALL accept')
 parser.add_argument('--debug', type=bool, default=False, metavar='D', help='Debug mode')
 parser.add_argument('--no-cuda', action='store_true', default=False, help='enables CUDA training')
-parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed')
+parser.add_argument('--seed', type=int, default=2, metavar='S', help='random seed')
 args = parser.parse_args()
 args.cuda = not args.no_cuda and torch.cuda.is_available()
 torch.manual_seed(args.seed)
@@ -167,7 +167,7 @@ for it in range(mutual_iteration):
     ############################## Initializing parameters ##############################
     # Set hyperparameters
     beta = 1.0; m_d_A = np.repeat(0.0, dim); m_d_B = np.repeat(0.0, dim) # Hyperparameters for \mu^A, \mu^B
-    w_dd_A = np.identity(dim) * 0.05; w_dd_B = np.identity(dim) * 0.05 # Hyperparameters for \Lambda^A, \Lambda^B
+    w_dd_A = np.identity(dim) * 0.1; w_dd_B = np.identity(dim) * 0.1 # Hyperparameters for \Lambda^A, \Lambda^B
     nu = dim
 
     # Initializing \mu, \Lambda
@@ -209,7 +209,7 @@ for it in range(mutual_iteration):
         pred_label_A = []; pred_label_B = []
         count_AtoB = count_BtoA = 0 # 現在のイテレーションでの受容回数を保存する変数
         """~~~~~~~~~~~~~~~~~~~~~~~~~~~~Sp:A->Li:Bここから~~~~~~~~~~~~~~~~~~~~~~~~~~~~"""
-        w_dk = np.zeros((D, K)); 
+        w_dk = np.random.multinomial(1, [1/K]*K, size=D);
         for k in range(K): # Sp:A：w^Aの事後分布のパラメータを計算
             tmp_eta_nA[k] = np.diag(-0.5 * (c_nd_A - mu_kd_A[k]).dot(lambda_kdd_A[k]).dot((c_nd_A - mu_kd_A[k]).T)).copy() 
             #print(f"tmp_eta_nA:{np.round(tmp_eta_nA[k],4)}")
@@ -268,7 +268,7 @@ for it in range(mutual_iteration):
             """
 
         """~~~~~~~~~~~~~~~~~~~~~~~~~~~~Sp:B->Li:Aここから~~~~~~~~~~~~~~~~~~~~~~~~~~~~"""
-        w_dk = np.zeros((D, K)); 
+        w_dk = np.random.multinomial(1, [1/K]*K, size=D);
         for k in range(K): # Sp:A：w^Aの事後分布のパラメータを計算
             tmp_eta_nB[k] = np.diag(-0.5 * (c_nd_B - mu_kd_B[k]).dot(lambda_kdd_B[k]).dot((c_nd_B - mu_kd_B[k]).T)).copy() 
             tmp_eta_nB[k] += 0.5 * np.log(np.linalg.det(lambda_kdd_B[k]) + 1e-7)

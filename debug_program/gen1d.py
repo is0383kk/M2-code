@@ -7,11 +7,13 @@ N = 300 # Number of data
 K = 3
 # K個の真の平均を指定
 mu_truth_kd_1 = np.array([[0], [15], [-12]])
-mu_truth_kd_2 = np.array([[0], [15], [30]])
+mu_truth_kd_2 = np.array([[0], [15], [-12]])
+#mu_truth_kd_2 = np.array([[0], [15], [30]])
 
 # K個の真の分散共分散行列を指定
 sigma2_truth_kdd_1 = np.array([[5,0], [5,0], [5,0]])
-sigma2_truth_kdd_2 = np.array([[6,0], [6,0], [6,0]])
+sigma2_truth_kdd_2 = np.array([[5,0], [5,0], [5,0]])
+#sigma2_truth_kdd_2 = np.array([[6,0], [6,0], [6,0]])
 
 # 左端（平均-5*σ）
 start = mu_truth_kd_1[0][0] - 10 * 5
@@ -40,9 +42,9 @@ plt.legend()
 #plt.show()
 plt.close()
 
-label_0 = np.full(100, 0)
-label_1 = np.full(100, 1)
-label_2 = np.full(100, 2)
+label_0 = np.full(1000, 0)
+label_1 = np.full(1000, 1)
+label_2 = np.full(1000, 2)
 s_truth_n = np.concatenate([label_0,label_1,label_2])
 label = s_truth_n
 # (観測)データを生成
@@ -56,6 +58,7 @@ x_nd_2 = np.array([
         loc=mu_truth_kd_2[k], scale=sigma2_truth_kdd_2[k][0], size=1
     ).flatten() for k in s_truth_n
 ])
+"""
 # 観測変数のプロット
 plt.figure()
 plt.grid()
@@ -100,7 +103,7 @@ plt.legend()
 plt.savefig('./dataset/data1d_2.png')
 plt.show()
 plt.close()
-
+"""
 ############################## Save synthetic data as .txt files ##############################
 np.save('./dataset/data1d_1.npy', x_nd_1) # Corresponds to x_1 in the graphical model
 np.save('./dataset/data1d_2.npy', x_nd_2) # Corresponds to x_2 in the graphical model

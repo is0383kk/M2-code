@@ -28,20 +28,20 @@ mu_synthetic_kd_2 = np.array( # This is observation1
      [0.0, 15.0]]
 )
 sigma2_synthetic_kdd_2 = np.array( # This is observation1
-    [[[10.0, 0.0], 
-    [0.0, 10.0]],
+    [[[15.0, 0.0], 
+    [0.0, 15.0]],
 
-     [[10.0, 0.0], 
-     [0.0, 10.0]],
+     [[15.0, 0.0], 
+     [0.0, 15.0]],
 
-     [[10.0, 0.0], 
-     [0.0, 10.0]]]
+     [[15.0, 0.0], 
+     [0.0, 15.0]]]
 )
 
 ############################## Make synthetic data ##############################
-label_0 = np.full(30, 0)
-label_1 = np.full(30, 1)
-label_2 = np.full(30, 2)
+label_0 = np.full(600, 0)
+label_1 = np.full(600, 1)
+label_2 = np.full(600, 2)
 z_synthetic_n = np.concatenate([label_0,label_1,label_2])
 #z_synthetic_nk = np.random.multinomial(n=1, pvals=pi_synthetic_k, size=N)
 #_, z_synthetic_n = np.where(z_synthetic_nk == 1)

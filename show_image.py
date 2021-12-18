@@ -46,7 +46,7 @@ trans = transforms.Compose([
 trans_ang1 = transforms.Compose([
     #transforms.Resize((120, 120)),
     transforms.RandomRotation(degrees=(0,0),fill=256),
-    transforms.Resize((77, 77)),
+    transforms.Resize((64, 64)),
     transforms.ToTensor(),
 ])
 trans_ang2 = transforms.Compose([
@@ -73,15 +73,15 @@ class ToNDarray(object):
 custom_dataset1 = CustomDataset(root, trans_ang1, train=True)
 #custom_dataset = CustomDataset(root, data_transforms, train=True)
 #print(f"データセット数 :{len(custom_dataset)}")
-batch_size = 10
-custom_loader1 = torch.utils.data.DataLoader(dataset=custom_dataset1, batch_size=batch_size, shuffle=True,num_workers=4,)
+batch_size = 20
+custom_loader1 = torch.utils.data.DataLoader(dataset=custom_dataset1, batch_size=batch_size, shuffle=False)
 
 # データのプロット
 custom_dataset2 = CustomDataset(root, trans_ang2, train=True)
 #custom_dataset = CustomDataset(root, data_transforms, train=True)
 #print(f"データセット数 :{len(custom_dataset)}")
-batch_size = 10
-custom_loader2 = torch.utils.data.DataLoader(dataset=custom_dataset2, batch_size=batch_size, shuffle=True, num_workers=4,)
+batch_size = 20
+custom_loader2 = torch.utils.data.DataLoader(dataset=custom_dataset2, batch_size=batch_size, shuffle=False)
 #print("batch_size",batch_size)
 """
 # データセット分割調整
@@ -137,7 +137,7 @@ for i, (images, labels) in enumerate(custom_loader1):
     #imgs = transform(im)
     images = torchvision.utils.make_grid(images, padding=1)
     plt.imshow(np.transpose(images, (1,2,0)), interpolation="nearest")
-    #plt.savefig('fruit10.png')
+    plt.savefig('fruit10.png')
     
     plt.show()
     plt.close()
@@ -159,7 +159,7 @@ for i, (images, labels) in enumerate(custom_loader2):
     #imgs = transform(im)
     images = torchvision.utils.make_grid(images, padding=1)
     plt.imshow(np.transpose(images, (1,2,0)), interpolation="nearest")
-    #plt.savefig('fruit10.png')
+    plt.savefig('fruit10_25.png')
     
     plt.show()
     plt.close()
