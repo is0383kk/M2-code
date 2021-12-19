@@ -11,8 +11,8 @@ mu_truth_kd_2 = np.array([[0], [15], [-12]])
 #mu_truth_kd_2 = np.array([[0], [15], [30]])
 
 # K個の真の分散共分散行列を指定
-sigma2_truth_kdd_1 = np.array([[5,0], [5,0], [5,0]])
-sigma2_truth_kdd_2 = np.array([[5,0], [5,0], [5,0]])
+sigma2_truth_kdd_1 = np.array([[6,0], [5,0], [6,0]])
+sigma2_truth_kdd_2 = np.array([[5,0], [7,0], [7,0]])
 #sigma2_truth_kdd_2 = np.array([[6,0], [6,0], [6,0]])
 
 # 左端（平均-5*σ）
@@ -42,9 +42,9 @@ plt.legend()
 #plt.show()
 plt.close()
 
-label_0 = np.full(1000, 0)
-label_1 = np.full(1000, 1)
-label_2 = np.full(1000, 2)
+label_0 = np.full(500, 0)
+label_1 = np.full(500, 1)
+label_2 = np.full(500, 2)
 s_truth_n = np.concatenate([label_0,label_1,label_2])
 label = s_truth_n
 # (観測)データを生成
