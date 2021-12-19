@@ -9,7 +9,7 @@ from sklearn.metrics import cohen_kappa_score
 parser = argparse.ArgumentParser(description='M-H algorithm M-GMM Example')
 parser.add_argument('--sign', type=int, default=3, metavar='K', help='Number of sign')
 parser.add_argument('--mode', type=int, default=-1, metavar='M', help='0:All reject, 1:ALL accept')
-parser.add_argument('--iteration', type=int, default=100, metavar='N', help='number of iteration for MGMM_MH')
+parser.add_argument('--iteration', type=int, default=75, metavar='N', help='number of iteration for MGMM_MH')
 args = parser.parse_args()
 
 # 保存用のディレクトリの作成
@@ -21,7 +21,7 @@ K = args.sign # サイン総数
 
 # データセットの読み込み
 c_nd_A = np.load("./dataset/data1d_1.npy") # Aの観測
-c_nd_B = np.load("./dataset/data1d_1.npy") # Bの観測
+c_nd_B = np.load("./dataset/data1d_2.npy") # Bの観測
 z_truth_n = np.load("./dataset/true_label1d.npy") # 真のサインラベル
 
 D = len(c_nd_A) # データ総数
@@ -90,6 +90,7 @@ ARI_B = np.zeros((iteration)) # 各イテレーションのARI
 concidence = np.zeros((iteration)) # 各イテレーションのカッパ係数
 accept_count_AtoB = np.zeros((iteration))
 accept_count_BtoA = np.zeros((iteration)) # 各イテレーションの受容回数
+
 for i in range(iteration):
     pred_label_A = []; pred_label_B = []
     count_AtoB = count_BtoA = 0 # 現在のイテレーションでの受容回数を保存する変数
@@ -104,12 +105,13 @@ for i in range(iteration):
 
     for d in range(D): # 潜在変数をサンプル：式(4.93)
         w_dk_A[d] = np.random.multinomial(n=1, pvals=eta_dkA[d], size=1).flatten() # w^Aのサンプリング
-        pred_label_A.append(np.argmax(w_dk_A[d]))
         
         if args.mode == 0:
-            judge_r = -1 # 全棄却用
+            pred_label_A.append(np.argmax(w_dk_A[d]))
         elif args.mode == 1:
-            judge_r = 1000 # 全棄却用
+            w_dk[d] = w_dk_A[d]
+            count_AtoB = count_AtoB + 1 # 受容した回数をカウント
+            pred_label_B.append(np.argmax(w_dk[d])) # 予測カテゴリ
         else:
             cat_liks_A[d] = multivariate_normal.pdf(c_nd_B[d], 
                             mean=mu_kd_B[np.argmax(w_dk_A[d])], 
@@ -121,13 +123,13 @@ for i in range(iteration):
                             )
             judge_r = cat_liks_A[d] / cat_liks_B[d] # AとBのカテゴリ尤度から受容率の計算
             judge_r = min(1, judge_r) # 受容率
-        rand_u = np.random.rand() # 一様変数のサンプリング
-        if judge_r >= rand_u:
-            w_dk[d] = w_dk_A[d]
-            count_AtoB = count_AtoB + 1 # 受容した回数をカウント
-        else: 
-            w_dk[d] = w_dk_B[d]
-        #pred_label_B.append(np.argmax(w_dk[d])) # 予測カテゴリ
+            rand_u = np.random.rand() # 一様変数のサンプリング
+            if judge_r >= rand_u:
+                w_dk[d] = w_dk_A[d]
+                count_AtoB = count_AtoB + 1 # 受容した回数をカウント
+            else: 
+                w_dk[d] = w_dk_B[d]
+            pred_label_B.append(np.argmax(w_dk[d])) # 予測カテゴリ
     if args.mode == -1 or args.mode == 1:
         # 更新後のw^Liを用いてエージェントBの\mu, \lambdaの再サンプリング
         for k in range(K):
@@ -145,8 +147,7 @@ for i in range(iteration):
             lambda_kdd_B[k] = wishart.rvs(size=1, df=nu_hat_k_B[k], scale=w_hat_kdd_B[k])
             # 更新後のパラメータからmuをサンプル
             mu_kd_B[k] = np.random.multivariate_normal(mean=m_hat_kd_B[k], cov=np.linalg.inv(beta_hat_k_B[k] * lambda_kdd_B[k]), size=1).flatten()
-    if args.mode == 0:
-        # 更新後のw^Liを用いてエージェントBの\mu, \lambdaの再サンプリング
+    if args.mode == 0:# No com
         for k in range(K):
             # muの事後分布のパラメータを計算
             beta_hat_k_A[k] = np.sum(w_dk_A[:, k]) + beta; m_hat_kd_A[k] = np.sum(w_dk_A[:, k] * c_nd_A.T, axis=1)
@@ -170,7 +171,7 @@ for i in range(iteration):
         """
 
     """~~~~~~~~~~~~~~~~~~~~~~~~~~~~Sp:B->Li:Aここから~~~~~~~~~~~~~~~~~~~~~~~~~~~~"""
-    #w_dk = np.random.multinomial(1, [1/K]*K, size=D);
+    w_dk = np.random.multinomial(1, [1/K]*K, size=D);
     for k in range(K): # Sp:A：w^Aの事後分布のパラメータを計算
         tmp_eta_nB[k] = np.diag(-0.5 * (c_nd_B - mu_kd_B[k]).dot(lambda_kdd_B[k]).dot((c_nd_B - mu_kd_B[k]).T)).copy() 
         tmp_eta_nB[k] += 0.5 * np.log(np.linalg.det(lambda_kdd_B[k]) + 1e-7)
@@ -180,12 +181,13 @@ for i in range(iteration):
     # 潜在変数をサンプル：式(4.93)
     for d in range(D):
         w_dk_B[d] = np.random.multinomial(n=1, pvals=eta_dkB[d], size=1).flatten() # w^Bのサンプリング
-        pred_label_B.append(np.argmax(w_dk_B[d])) # 予測カテゴリ
         
         if args.mode == 0:
-            judge_r = -1 # 全棄却用
+            pred_label_B.append(np.argmax(w_dk_B[d])) # 予測カテゴリ
         elif args.mode == 1:
-            judge_r = 1000 # 全受容用
+            w_dk[d] = w_dk_B[d]
+            count_BtoA = count_BtoA + 1 # 受容した回数をカウント
+            pred_label_A.append(np.argmax(w_dk[d])) # 予測カテゴリ
         else:
             cat_liks_B[d] = multivariate_normal.pdf(c_nd_A[d], 
                             mean=mu_kd_A[np.argmax(w_dk_B[d])], 
@@ -197,16 +199,16 @@ for i in range(iteration):
                             )
             judge_r = cat_liks_B[d] / cat_liks_A[d] # AとBのカテゴリ尤度から受容率の計算
             judge_r = min(1, judge_r) # 受容率
-        rand_u = np.random.rand() # 一様変数のサンプリング
-        if judge_r >= rand_u: 
-            w_dk[d] = w_dk_B[d]
-            count_BtoA = count_BtoA + 1 # 受容した回数をカウント
-        else: 
-            w_dk[d] = w_dk_A[d]
-        #pred_label_A.append(np.argmax(w_dk[d])) # 予測カテゴリ
+            rand_u = np.random.rand() # 一様変数のサンプリング
+            if judge_r >= rand_u: 
+                w_dk[d] = w_dk_B[d]
+                count_BtoA = count_BtoA + 1 # 受容した回数をカウント
+            else: 
+                w_dk[d] = w_dk_A[d]
+            pred_label_A.append(np.argmax(w_dk[d])) # 予測カテゴリ
     
     if args.mode == -1 or args.mode == 1:
-    # 更新後のw^Liを用いてエージェントBの\mu, \lambdaの再サンプリング
+        # 更新後のw^Liを用いてエージェントBの\mu, \lambdaの再サンプリング
         for k in range(K):
             # muの事後分布のパラメータを計算
             beta_hat_k_A[k] = np.sum(w_dk[:, k]) + beta; m_hat_kd_A[k] = np.sum(w_dk[:, k] * c_nd_A.T, axis=1)
@@ -227,7 +229,7 @@ for i in range(iteration):
                 mu_d_A[d] = mu_kd_A[np.argmax(w_dk[d])]
                 var_d_A[d] = np.diag(np.linalg.inv(lambda_kdd_A[np.argmax(w_dk[d])]))
             """
-    if args.mode == 0:
+    if args.mode == 0:# No com
         for k in range(K):
             # muの事後分布のパラメータを計算
             beta_hat_k_B[k] = np.sum(w_dk_B[:, k]) + beta; m_hat_kd_B[k] = np.sum(w_dk_B[:, k] * c_nd_B.T, axis=1)
@@ -245,36 +247,16 @@ for i in range(iteration):
             mu_kd_B[k] = np.random.multivariate_normal(mean=m_hat_kd_B[k], cov=np.linalg.inv(beta_hat_k_B[k] * lambda_kdd_B[k]), size=1).flatten()
 
     ############################## 評価値計算 ##############################
-    # cappa 係数の計算
-    sum_same_w = 0.0
-    a_chance = 0.0
-    prob_w = [0.0 for i in range(K)]
-    w_count_a = [0.0 for i in range(K)]
-    w_count_b = [0.0 for i in range(K)]
-
-    for d in range(D):
-        if np.argmax(w_dk_A[d]) == np.argmax(w_dk_B[d]):
-            sum_same_w += 1
-
-        for w in range(K):
-            if np.argmax(w_dk_A[d]) == w:
-                w_count_a[w] += 1
-            if np.argmax(w_dk_B[d]) == w:
-                w_count_b[w] += 1
+    # Kappa係数の計算
+    concidence[i] = np.round(cohen_kappa_score(pred_label_A,pred_label_B),3)
+    # ARIの計算 
+    ARI_A[i] = np.round(ari(z_truth_n,pred_label_A),3); ARI_B[i] = np.round(ari(z_truth_n,pred_label_B),3)
+    # 受容回数
+    accept_count_AtoB[i] = count_AtoB; accept_count_BtoA[i] = count_BtoA
     
-    for w in range(K):
-        prob_w[w] = (w_count_a[w] / D) * (w_count_b[w] / D)
-        a_chance += prob_w[w]
-    a_observed = (sum_same_w / D)
-
-    concidence[i] = np.round((a_observed - a_chance) / (1 - a_chance), 3) # Kappa係数の計算
-    ARI_A[i] = np.round(ari(z_truth_n,pred_label_A),3)
-    ARI_B[i] = np.round(ari(z_truth_n,pred_label_B),3) # ARI
-    accept_count_AtoB[i] = count_AtoB
-    accept_count_BtoA[i] = count_BtoA # 受容回数
-
-    print(f"=> Epoch: {i+1}, ARI_A:{ARI_A[i]}, ARI_B:{ARI_B[i]}, Concidence:{concidence[i]}, Accept_AtoB:{int(accept_count_AtoB[i])}, Accept_BtoA:{int(accept_count_BtoA[i])}")
-    print(f"Cappa{np.round(cohen_kappa_score(pred_label_A,pred_label_B),3)}")
+    if i == 0 or (i+1) % 10 == 0 or i == (iteration-1): 
+        print(f"=> Ep: {i+1}, A: {ARI_A[i]}, B: {ARI_B[i]}, C:{concidence[i]}, A2B:{int(accept_count_AtoB[i])}, B2A:{int(accept_count_BtoA[i])}")
+"""
     # 値を記録
     _, w_n_A = np.where(w_dk_A == 1)
     _, w_n_B = np.where(w_dk_B == 1)
@@ -292,7 +274,7 @@ for i in range(iteration):
     trace_w_ikdd_B.append(w_hat_kdd_B.copy())
     trace_nu_ik_A.append(nu_hat_k_A.copy())
     trace_nu_ik_B.append(nu_hat_k_B.copy())
-
+    """
 # 受容回数
 plt.figure()
 #plt.ylim(0,)
@@ -311,7 +293,7 @@ plt.plot(range(0,iteration), concidence, marker="None")
 plt.xlabel('iteration')
 plt.ylabel('Concidence')
 plt.ylim(0,1)
-plt.title('Cappa')
+plt.title('k')
 plt.savefig(dir_name+"/conf.png")
 #plt.show()
 plt.close()
