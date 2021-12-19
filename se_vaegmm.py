@@ -15,7 +15,7 @@ from tool import visualize_gmm
 
 parser = argparse.ArgumentParser(description='Symbol emergence based on VAE+GMM Example')
 parser.add_argument('--batch-size', type=int, default=10, metavar='B', help='input batch size for training')
-parser.add_argument('--vae-iter', type=int, default=50, metavar='V', help='number of VAE iteration')
+parser.add_argument('--vae-iter', type=int, default=75, metavar='V', help='number of VAE iteration')
 parser.add_argument('--mh-iter', type=int, default=100, metavar='M', help='number of M-H mgmm iteration')
 parser.add_argument('--category', type=int, default=10, metavar='K', help='number of category for GMM module')
 parser.add_argument('--mode', type=int, default=-1, metavar='M', help='0:All reject, 1:ALL accept')
@@ -131,7 +131,7 @@ all_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=D, shuffle=
 
 print(f"D={D}, Category:{args.category}")
 print(f"VAE_iter:{args.vae_iter}, Batch_size:{args.batch_size}")
-print(f"MH_iter:{args.mh_iter}, MH_mode:{args.mode}") 
+print(f"MH_iter:{args.mh_iter}, MH_mode:{args.mode}(-1:Com 0:No-com 1:All accept)") 
 import vae_module, cnn_vae_module
 import cnn_vae_module_mnist
 import cnn_vae_module_fruit
