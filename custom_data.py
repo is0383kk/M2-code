@@ -16,6 +16,7 @@ class CustomDataset(torch.utils.data.Dataset):
         #path = "/home/is0383kk/workspace/mnist_png/training"
         classes = os.listdir(root+"/"+str(train_path))
         print(f"classes : {classes}")
+        classes.sort()
         self.transform = transform # 前処理クラス
         # 画像とラベルの一覧を保持するリスト
         self.images = []; self.labels = []
