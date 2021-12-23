@@ -10,4 +10,4 @@ pth
 obj_data
 debug_program/*npy
 debug_program/*jpg
-*zip
+#*zip
