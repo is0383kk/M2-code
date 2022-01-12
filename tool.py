@@ -3,7 +3,6 @@ from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
 from random import random
 import matplotlib.pyplot as plt
-from sklearn.metrics.cluster import adjusted_rand_score as ARI
 from scipy.stats import multivariate_normal
 import pandas as pd
 import seaborn as sns

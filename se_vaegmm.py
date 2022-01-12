@@ -4,6 +4,7 @@ from scipy.stats import wishart, multivariate_normal
 import matplotlib.pyplot as plt
 from tool import calc_ari,cmx
 from sklearn.metrics import cohen_kappa_score
+from sklearn.metrics.cluster import adjusted_rand_score as ari
 import torch
 from torchvision import datasets, transforms
 from torchvision.utils import save_image
@@ -361,10 +362,13 @@ for it in range(mutual_iteration):
                 mu_kd_B[k] = np.random.multivariate_normal(mean=m_hat_kd_B[k], cov=np.linalg.inv(beta_hat_k_B[k] * lambda_kdd_B[k]), size=1).flatten()
 
         ############################## 評価値計算 ##############################
+        _, result_a = calc_ari(pred_label_A, z_truth_n)
+        _, result_b = calc_ari(pred_label_B, z_truth_n)
         # Kappa係数の計算
         concidence[i] = np.round(cohen_kappa_score(pred_label_A,pred_label_B),3)
         # ARIの計算 
-        ARI_A[i] = np.round(calc_ari(pred_label_A, z_truth_n)[0],3); ARI_B[i] = np.round(calc_ari(pred_label_B, z_truth_n)[0],3)
+        #ARI_A[i] = np.round(calc_ari(pred_label_A, z_truth_n)[0],3); ARI_B[i] = np.round(calc_ari(pred_label_B, z_truth_n)[0],3)
+        ARI_A[i] = np.round(ari(z_truth_n, result_a),3); ARI_B[i] = np.round(ari(z_truth_n,result_b),3)
         # 受容回数
         accept_count_AtoB[i] = count_AtoB; accept_count_BtoA[i] = count_BtoA
         
@@ -425,8 +429,8 @@ for it in range(mutual_iteration):
     #plt.show()
     plt.close()
 
-    _, result_a = calc_ari(pred_label_A, z_truth_n)
-    _, result_b = calc_ari(pred_label_B, z_truth_n)
+    #_, result_a = calc_ari(pred_label_A, z_truth_n)
+    #_, result_b = calc_ari(pred_label_B, z_truth_n)
     cmx(iteration=it, y_true=z_truth_n, y_pred=result_a, agent="A", save_dir=result_dir)
     cmx(iteration=it, y_true=z_truth_n, y_pred=result_b, agent="B", save_dir=result_dir)
     print(f"Iteration:{it} Done:max_A: {max(ARI_A)}, max_B: {max(ARI_B)}, max_c:{max(concidence)}")
