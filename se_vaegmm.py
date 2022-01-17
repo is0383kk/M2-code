@@ -98,7 +98,7 @@ all_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=D, shuffle=
 all_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=D, shuffle=False) # データセット総数分のローダ
 """
 
-
+"""
 # カスタムデータローダ
 from custom_data import CustomDataset
 print("Dataset : CUSTOM")
@@ -128,7 +128,7 @@ train_loader1 = torch.utils.data.DataLoader(dataset=train_dataset1, batch_size=a
 train_loader2 = torch.utils.data.DataLoader(dataset=train_dataset2, batch_size=args.batch_size, shuffle=False)
 all_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=D, shuffle=False) # データセット総数分のローダ
 all_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=D, shuffle=False) # データセット総数分のローダ
-
+"""
 
 print(f"D={D}, Category:{args.category}")
 print(f"VAE_iter:{args.vae_iter}, Batch_size:{args.batch_size}")
@@ -143,7 +143,7 @@ mu_d_B = np.zeros((D)); var_d_B = np.zeros((D))
 for it in range(mutual_iteration):
     print(f"------------------Mutual learning session {it} begins------------------")
     ############################## Training VAE ##############################
-    c_nd_A, label, loss_list = cnn_vae_module.train(
+    c_nd_A, label, loss_list = cnn_vae_module_mnist.train(
         iteration=it, # Current iteration
         gmm_mu=torch.from_numpy(mu_d_A), gmm_var=torch.from_numpy(var_d_A), # mu and var estimated by Multimodal-GMM
         epoch=args.vae_iter, 
@@ -151,7 +151,7 @@ for it in range(mutual_iteration):
         model_dir=dir_name, agent="A"
     )
     # VAE module on Agent B
-    c_nd_B, label, loss_list = cnn_vae_module.train(
+    c_nd_B, label, loss_list = cnn_vae_module_mnist.train(
         iteration=it, # Current iteration
         gmm_mu=torch.from_numpy(mu_d_B), gmm_var=torch.from_numpy(var_d_B), # mu and var estimated by Multimodal-GMM
         epoch=args.vae_iter, 

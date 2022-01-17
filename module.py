@@ -45,10 +45,10 @@ if not os.path.exists(result_dir):    os.mkdir(result_dir)
 
 
 ############################## Prepareing Dataset ##############################
-"""
+
 # MNIST左右回転設定
 angle_a = 0 # 回転角度
-angle_b = 75 # 回転角度
+angle_b = 45 # 回転角度
 trans_ang1 = transforms.Compose([transforms.RandomRotation(degrees=(-angle_a,-angle_a)), transforms.ToTensor()]) # -angle度回転設定
 trans_ang2 = transforms.Compose([transforms.RandomRotation(degrees=(angle_b,angle_b)), transforms.ToTensor()]) # angle度回転設定
 # データセット定義
@@ -64,7 +64,7 @@ train_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=args.batc
 train_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=args.batch_size, shuffle=False) # train_loader for agent B
 all_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=D, shuffle=False) # データセット総数分のローダ
 all_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=D, shuffle=False) # データセット総数分のローダ
-"""
+
 
 """
 angle_a = 0 # 回転角度
@@ -86,7 +86,7 @@ all_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=D, shuffle=
 all_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=D, shuffle=False) # データセット総数分のローダ
 """
 
-
+"""
 # カスタムデータローダ
 from custom_data import CustomDataset
 print("Dataset : CUSTOM")
@@ -115,7 +115,7 @@ train_loader1 = torch.utils.data.DataLoader(dataset=train_dataset1, batch_size=a
 train_loader2 = torch.utils.data.DataLoader(dataset=train_dataset2, batch_size=args.batch_size, shuffle=False)
 all_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=D, shuffle=False) # データセット総数分のローダ
 all_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=D, shuffle=False) # データセット総数分のローダ
-
+"""
 
 import vae_module, cnn_vae_module
 import cnn_vae_module_mnist, cnn_vae_module_fruit
@@ -155,7 +155,7 @@ def decode_from_mgmm(load_iteration, sigma, K, decode_k, sample_num, manual, dir
                                 model_dir=dir_name, agent="A")
         #vae_module.decode(iteration=load_iteration, decode_k=i, sample_num=sample_num, 
         #                  sample_d=sample_d, manual=manual, model_dir=dir_name, agent="A")
-        cnn_vae_module.decode(iteration=load_iteration, decode_k=i, sample_num=sample_num, 
+        cnn_vae_module_mnist.decode(iteration=load_iteration, decode_k=i, sample_num=sample_num, 
                           sample_d=sample_d, manual=manual, model_dir=dir_name, agent="A")
         sample_d = visualize_gmm(iteration=load_iteration, # load iteration model 
                                 sigma=sigma,
@@ -166,11 +166,11 @@ def decode_from_mgmm(load_iteration, sigma, K, decode_k, sample_num, manual, dir
                                 model_dir=dir_name, agent="B")
         #vae_module.decode(iteration=load_iteration, decode_k=i, sample_num=sample_num, 
         #                  sample_d=sample_d, manual=manual, model_dir=dir_name, agent="B")
-        cnn_vae_module.decode(iteration=load_iteration, decode_k=i, sample_num=sample_num, 
+        cnn_vae_module_mnist.decode(iteration=load_iteration, decode_k=i, sample_num=sample_num, 
                           sample_d=sample_d, manual=manual, model_dir=dir_name, agent="B")
 
 def main():
-    load_iteration = 0
+    load_iteration = 3
     decode_from_mgmm(load_iteration=load_iteration, sigma=0, K=10, decode_k=None, sample_num=1, manual=True, dir_name=dir_name)
     get_concat_h_multi_resize(dir_name = dir_name, agent="A"); get_concat_h_multi_resize(dir_name = dir_name, agent="B")
     #decode_from_mgmm(load_iteration=load_iteration, sigma=0, K=10, decode_k=None, sample_num=8, manual=False, dir_name=dir_name)
@@ -182,8 +182,8 @@ def main():
     #cnn_vae_module.plot_latent(iteration=load_iteration, all_loader=all_loader2, model_dir=dir_name, agent="B") # plot latent space of VAE on Agent B
     #decode_from_mgmm(load_iteration=0, sigma=0, K=10, decode_k=None, sample_num=1, manual=True, dir_name=dir_name)
     #decode_from_mgmm(load_iteration=4, sigma=0, K=10, decode_k=None, sample_num=8, manual=False, dir_name=dir_name)
-    cnn_vae_module.plot_latent(iteration=load_iteration, all_loader=all_loader1, model_dir=dir_name, agent="A") # plot latent space of VAE on Agent A
-    cnn_vae_module.plot_latent(iteration=load_iteration, all_loader=all_loader2, model_dir=dir_name, agent="B") # plot latent space of VAE on Agent B
+    #cnn_vae_module.plot_latent(iteration=load_iteration, all_loader=all_loader1, model_dir=dir_name, agent="A") # plot latent space of VAE on Agent A
+    #cnn_vae_module.plot_latent(iteration=load_iteration, all_loader=all_loader2, model_dir=dir_name, agent="B") # plot latent space of VAE on Agent B
     #cnn_vae_module3.plot_latent(iteration=4, all_loader=all_loader1, model_dir=dir_name, agent="A") # plot latent space of VAE on Agent A
     #cnn_vae_module3.plot_latent(iteration=4, all_loader=all_loader2, model_dir=dir_name, agent="B") # plot latent space of VAE on Agent B
     
