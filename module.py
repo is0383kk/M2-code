@@ -86,7 +86,7 @@ all_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=D, shuffle=
 all_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=D, shuffle=False) # データセット総数分のローダ
 """
 
-"""
+
 # カスタムデータローダ
 from custom_data import CustomDataset
 print("Dataset : CUSTOM")
@@ -115,7 +115,7 @@ train_loader1 = torch.utils.data.DataLoader(dataset=train_dataset1, batch_size=a
 train_loader2 = torch.utils.data.DataLoader(dataset=train_dataset2, batch_size=args.batch_size, shuffle=False)
 all_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=D, shuffle=False) # データセット総数分のローダ
 all_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=D, shuffle=False) # データセット総数分のローダ
-"""
+
 
 import vae_module, cnn_vae_module
 import cnn_vae_module_mnist, cnn_vae_module_fruit
@@ -126,12 +126,12 @@ def get_concat_h_multi_resize(dir_name, agent, resample=Image.BICUBIC):
     im4 = Image.open(dir_name+'/recon'+agent+'/manual_4.png');im5 = Image.open(dir_name+'/recon'+agent+'/manual_5.png')
     im6 = Image.open(dir_name+'/recon'+agent+'/manual_6.png');im7 = Image.open(dir_name+'/recon'+agent+'/manual_7.png')
     im8 = Image.open(dir_name+'/recon'+agent+'/manual_8.png');im9 = Image.open(dir_name+'/recon'+agent+'/manual_9.png')
-    #im10 = Image.open(dir_name+'/recon'+agent+'/manual_10.png');im11 = Image.open(dir_name+'/recon'+agent+'/manual_11.png')
-    #im12 = Image.open(dir_name+'/recon'+agent+'/manual_12.png');im13 = Image.open(dir_name+'/recon'+agent+'/manual_13.png')
-    #im14 = Image.open(dir_name+'/recon'+agent+'/manual_14.png')
+    im10 = Image.open(dir_name+'/recon'+agent+'/manual_10.png');im11 = Image.open(dir_name+'/recon'+agent+'/manual_11.png')
+    im12 = Image.open(dir_name+'/recon'+agent+'/manual_12.png');im13 = Image.open(dir_name+'/recon'+agent+'/manual_13.png')
+    im14 = Image.open(dir_name+'/recon'+agent+'/manual_14.png')
     #im15 = Image.open(dir_name+'/recon'+agent+'/manual_15.png')
-    #im_list = [im0, im1, im2, im3, im4, im5, im6, im7, im8, im9, im10, im11, im12, im13, im14]
-    im_list = [im0, im1, im2, im3, im4, im5, im6, im7, im8, im9]
+    im_list = [im0, im1, im2, im3, im4, im5, im6, im7, im8, im9, im10, im11, im12, im13, im14]
+    #im_list = [im0, im1, im2, im3, im4, im5, im6, im7, im8, im9]
     #im_list = [im0, im1, im2, im3, im4]
     min_height = min(im.height for im in im_list)
     im_list_resize = [im.resize((int(im.width * min_height / im.height), min_height),resample=resample)
@@ -155,7 +155,7 @@ def decode_from_mgmm(load_iteration, sigma, K, decode_k, sample_num, manual, dir
                                 model_dir=dir_name, agent="A")
         #vae_module.decode(iteration=load_iteration, decode_k=i, sample_num=sample_num, 
         #                  sample_d=sample_d, manual=manual, model_dir=dir_name, agent="A")
-        cnn_vae_module_mnist.decode(iteration=load_iteration, decode_k=i, sample_num=sample_num, 
+        cnn_vae_module.decode(iteration=load_iteration, decode_k=i, sample_num=sample_num, 
                           sample_d=sample_d, manual=manual, model_dir=dir_name, agent="A")
         sample_d = visualize_gmm(iteration=load_iteration, # load iteration model 
                                 sigma=sigma,
@@ -166,12 +166,12 @@ def decode_from_mgmm(load_iteration, sigma, K, decode_k, sample_num, manual, dir
                                 model_dir=dir_name, agent="B")
         #vae_module.decode(iteration=load_iteration, decode_k=i, sample_num=sample_num, 
         #                  sample_d=sample_d, manual=manual, model_dir=dir_name, agent="B")
-        cnn_vae_module_mnist.decode(iteration=load_iteration, decode_k=i, sample_num=sample_num, 
+        cnn_vae_module.decode(iteration=load_iteration, decode_k=i, sample_num=sample_num, 
                           sample_d=sample_d, manual=manual, model_dir=dir_name, agent="B")
 
 def main():
-    load_iteration = 3
-    decode_from_mgmm(load_iteration=load_iteration, sigma=0, K=10, decode_k=None, sample_num=1, manual=True, dir_name=dir_name)
+    load_iteration = 0
+    decode_from_mgmm(load_iteration=load_iteration, sigma=0, K=15, decode_k=None, sample_num=1, manual=True, dir_name=dir_name)
     get_concat_h_multi_resize(dir_name = dir_name, agent="A"); get_concat_h_multi_resize(dir_name = dir_name, agent="B")
     #decode_from_mgmm(load_iteration=load_iteration, sigma=0, K=10, decode_k=None, sample_num=8, manual=False, dir_name=dir_name)
     #vae_module.plot_latent(iteration=0, all_loader=all_loader1, model_dir=dir_name, agent="A") # plot latent space of VAE on Agent A

@@ -12,7 +12,7 @@ device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 x_dim = 12
 h_dim = 512
 image_channels=3
-image_size = 77
+image_size = 64
 
 class Flatten(nn.Module):
     def forward(self, input):
