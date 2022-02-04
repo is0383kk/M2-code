@@ -13,8 +13,8 @@ from torch.utils.data.dataset import Subset
 import matplotlib.animation as animation
 
 torch.manual_seed(1)
-root = "/home/is0383kk/workspace/mnist_png/mnist_png"
-root = "/home/is0383kk/workspace/fruits-360_dataset/fruits-360"
+root = "/home/is0383kk/workspace/mnist_png/"
+#root = "/home/is0383kk/workspace/fruits-360_dataset/fruits-360"
 #root = "/home/is0383kk/workspace/dataset_test"
 #root = "../obj_data/train" # データセット読み込み先パス
 #前処理
@@ -50,7 +50,8 @@ trans_ang1 = transforms.Compose([
     transforms.ToTensor(),
 ])
 trans_ang2 = transforms.Compose([
-    transforms.RandomRotation(degrees=(25,25),fill=256),
+    #transforms.RandomRotation(degrees=(25,25),fill=256),
+    transforms.RandomRotation(degrees=(45,45)),
     transforms.Resize((64, 64)),
     transforms.ToTensor(),
 ])
@@ -137,7 +138,7 @@ for i, (images, labels) in enumerate(custom_loader1):
     #imgs = transform(im)
     images = torchvision.utils.make_grid(images, padding=1)
     plt.imshow(np.transpose(images, (1,2,0)), interpolation="nearest")
-    plt.savefig('fruit10.png')
+    plt.savefig('mnist.png')
     
     plt.show()
     plt.close()
@@ -159,7 +160,7 @@ for i, (images, labels) in enumerate(custom_loader2):
     #imgs = transform(im)
     images = torchvision.utils.make_grid(images, padding=1)
     plt.imshow(np.transpose(images, (1,2,0)), interpolation="nearest")
-    plt.savefig('fruit10_25.png')
+    plt.savefig('mnist_25.png')
     
     plt.show()
     plt.close()
