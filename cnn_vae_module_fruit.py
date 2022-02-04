@@ -10,10 +10,10 @@ from tool import visualize_ls, sample, get_param
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 x_dim = 12
-h_dim = 512
+h_dim = 1024
+#h_dim = 2304
 image_channels=3
 image_size = 64
-
 class Flatten(nn.Module):
     def forward(self, input):
         #print("input.size(0)",input.size(0))
@@ -28,13 +28,13 @@ class VAE(nn.Module):
     def __init__(self, image_channels=image_channels, h_dim=h_dim, x_dim=x_dim):
         super(VAE, self).__init__()
         self.encoder = nn.Sequential(
-            nn.Conv2d(in_channels=image_channels, out_channels=16, kernel_size=4, stride=2),
-            nn.ReLU(),
-            nn.Conv2d(in_channels=16, out_channels=32, kernel_size=4, stride=2),
+            nn.Conv2d(in_channels=image_channels, out_channels=32, kernel_size=4, stride=2),
             nn.ReLU(),
             nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2),
             nn.ReLU(),
             nn.Conv2d(in_channels=64, out_channels=128, kernel_size=4, stride=2),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=128, out_channels=256, kernel_size=4, stride=2),
             nn.ReLU(),
             Flatten()
         )
@@ -45,25 +45,18 @@ class VAE(nn.Module):
         
         self.decoder = nn.Sequential(
             UnFlatten(),
-            nn.ConvTranspose2d(in_channels=h_dim, out_channels=128, kernel_size=3, stride=2),
+            nn.ConvTranspose2d(in_channels=h_dim, out_channels=128, kernel_size=5, stride=2),
             nn.ReLU(),
-            nn.ConvTranspose2d(in_channels=128, out_channels=64, kernel_size=3, stride=2),
+            nn.ConvTranspose2d(in_channels=128, out_channels=64, kernel_size=5, stride=2),
             nn.ReLU(),
-            nn.ConvTranspose2d(in_channels=64, out_channels=32, kernel_size=5, stride=2),
+            nn.ConvTranspose2d(in_channels=64, out_channels=32, kernel_size=6, stride=2),
             nn.ReLU(),
-            nn.ConvTranspose2d(in_channels=32, out_channels=16, kernel_size=5, stride=2),            
-            nn.ReLU(),
-            nn.ConvTranspose2d(in_channels=16, out_channels=image_channels, kernel_size=5, stride=2),
-            #nn.ReLU(),
-            #nn.ConvTranspose2d(in_channels=8, out_channels=image_channels, kernel_size=6, stride=1),            
-            #nn.ReLU(),
-            #nn.ConvTranspose2d(in_channels=16, out_channels=image_channels, kernel_size=3, stride=2),
+            nn.ConvTranspose2d(in_channels=32, out_channels=image_channels, kernel_size=6, stride=2),            
             nn.Sigmoid(),
         )
         self.fc1 = nn.Linear(h_dim, x_dim)
         self.fc2 = nn.Linear(h_dim, x_dim)
         self.fc3 = nn.Linear(x_dim, h_dim)
-        self.softplus= nn.Softplus()
         # 事前分布のパラメータN(0,I)で初期化
         self.prior_var = nn.Parameter(torch.Tensor(1, x_dim).float().fill_(1.0))
         self.prior_logvar = nn.Parameter(self.prior_var.log())
