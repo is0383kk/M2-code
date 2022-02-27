@@ -51,7 +51,7 @@ if not os.path.exists(result_dir):    os.mkdir(result_dir)
 ############################## Prepareing Dataset #############################
 
 
-"""
+
 # MNIST左右回転設定
 print("Dataset : MNIST")
 angle_a = 0 # 回転角度
@@ -71,7 +71,7 @@ train_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=args.batc
 train_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=args.batch_size, shuffle=False) # train_loader for agent B
 all_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=D, shuffle=False) # データセット総数分のローダ
 all_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=D, shuffle=False) # データセット総数分のローダ
-"""
+
 
 """
 # CIFAR10用
@@ -98,7 +98,7 @@ all_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=D, shuffle=
 all_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=D, shuffle=False) # データセット総数分のローダ
 """
 
-
+"""
 # カスタムデータローダ
 from custom_data import CustomDataset
 print("Dataset : CUSTOM")
@@ -128,7 +128,7 @@ train_loader1 = torch.utils.data.DataLoader(dataset=train_dataset1, batch_size=a
 train_loader2 = torch.utils.data.DataLoader(dataset=train_dataset2, batch_size=args.batch_size, shuffle=False)
 all_loader1 = torch.utils.data.DataLoader(train_dataset1, batch_size=D, shuffle=False) # データセット総数分のローダ
 all_loader2 = torch.utils.data.DataLoader(train_dataset2, batch_size=D, shuffle=False) # データセット総数分のローダ
-
+"""
 
 print(f"D={D}, Category:{args.category}")
 print(f"VAE_iter:{args.vae_iter}, Batch_size:{args.batch_size}")
